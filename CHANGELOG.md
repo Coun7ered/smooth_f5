@@ -1,0 +1,1 @@
+tweak camera following logic
