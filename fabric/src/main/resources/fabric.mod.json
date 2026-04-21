@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "smooth_f5",
+  "version": "${version}",
+  "name": "Smooth F5",
+  "description": "A mod for smoothing out the F5 camera view",
+  "authors": [
+    "Countered!"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "CC0-1.0",
+  "icon": "icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.countered.smoothf5.fabric.SmoothF5ModFabric"
+    ],
+    "client": [
+      "net.countered.smoothf5.fabric.client.ExampleModFabricClient"
+    ]
+  },
+  "mixins": [
+    "smooth_f5.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "*",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "architectury": ">=13.0.8",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "net.countered.smoothf5.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "client": [
+    "CameraAccessor",
+    "CameraMixin"
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

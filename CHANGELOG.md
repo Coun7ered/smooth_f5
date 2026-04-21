@@ -1,0 +1,3 @@
+- add options to disable position and rotation smoothing
+- change transition from third person to second person
+- fix first frame flicker

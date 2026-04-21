@@ -1,0 +1,38 @@
+modLoader = "javafml"
+loaderVersion = "[10,)"
+#issueTrackerURL = ""
+license = "CC-0"
+
+[[mods]]
+modId = "smooth_f5"
+version = "${version}"
+displayName = "Smooth F5"
+authors = "Countered!"
+description = '''
+A mod for smoothing out the F5 camera view.
+'''
+logoFile = "icon.png"
+
+[[dependencies.smooth_f5]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.11,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.smooth_f5]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.11,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.smooth_f5]]
+modId = "architectury"
+type = "required"
+versionRange = "[19.0.1,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[mixins]]
+config = "smooth_f5.mixins.json"
