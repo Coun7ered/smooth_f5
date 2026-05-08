@@ -1,10 +1,11 @@
 package net.countered.smoothf5.fabric;
 
+import eu.midnightdust.lib.config.MidnightConfig;
+import net.countered.smoothf5.SmoothF5Mod;
+import net.countered.smoothf5.config.fabric.FabricModConfig;
 import net.fabricmc.api.ModInitializer;
 
-import net.countered.smoothf5.ExampleMod;
-
-public final class ExampleModFabric implements ModInitializer {
+public final class SmoothF5ModFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         // This code runs as soon as Minecraft is in a mod-load-ready state.
@@ -12,6 +13,7 @@ public final class ExampleModFabric implements ModInitializer {
         // Proceed with mild caution.
 
         // Run our common setup.
-        ExampleMod.init();
+        SmoothF5Mod.init();
+        MidnightConfig.init(SmoothF5Mod.MOD_ID, FabricModConfig.class);
     }
 }

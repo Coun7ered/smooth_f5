@@ -12,11 +12,11 @@
     "sources": "https://github.com/FabricMC/fabric-example-mod"
   },
   "license": "CC0-1.0",
-  "icon": "assets/smooth_f5/icon.png",
+  "icon": "icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.countered.smoothf5.fabric.ExampleModFabric"
+      "net.countered.smoothf5.fabric.SmoothF5ModFabric"
     ],
     "client": [
       "net.countered.smoothf5.fabric.client.ExampleModFabricClient"

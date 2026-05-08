@@ -69,6 +69,8 @@ dependencies {
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
     shadowBundle project(path: ':common', configuration: 'transformProductionNeoForge')
+
+    modImplementation include ("eu.midnightdust:midnightlib:1.9.2+1.21.1-neoforge")
 }
 
 processResources {
