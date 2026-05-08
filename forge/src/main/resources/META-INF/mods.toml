@@ -9,9 +9,9 @@ version = "${version}"
 displayName = "Smooth F5"
 authors = "Countered!"
 description = '''
-A mod for smoothing out the F5 camera view
+A mod for smoothing out the F5 camera view.
 '''
-#logoFile = ""
+logoFile = "icon.png"
 
 [[dependencies.smooth_f5]]
 modId = "forge"

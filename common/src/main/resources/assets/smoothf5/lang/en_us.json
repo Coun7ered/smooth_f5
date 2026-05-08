@@ -1,0 +1,10 @@
+{
+  "smooth_f5.midnightconfig.title": "Smooth F5",
+  "smooth_f5.midnightconfig.category.general": "General",
+  "smooth_f5.midnightconfig.category.camera": "Camera",
+  "smooth_f5.midnightconfig.enableSmoothF5": "Enable Smooth F5",
+  "smooth_f5.midnightconfig.enablePosSmoothing": "Enable Camera Position Smoothing",
+  "smooth_f5.midnightconfig.enableRotSmoothing": "Enable Camera Rotation Smoothing",
+  "smooth_f5.midnightconfig.posStiffness": "Camera Position Stiffness",
+  "smooth_f5.midnightconfig.rotStiffness": "Camera Rotation Stiffness"
+}

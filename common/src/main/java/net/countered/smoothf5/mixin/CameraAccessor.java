@@ -8,13 +8,19 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(Camera.class)
 public interface CameraAccessor {
-    @Accessor("xRot") void setXRot(float value);
-    @Accessor("yRot") void setYRot(float value);
 
-    @Accessor("xRot") float getXRot();
-    @Accessor("yRot") float getYRot();
-    @Accessor("position") Vec3 getPosition();
+    @Accessor("xRot")
+    float getXRot();
+
+    @Accessor("yRot")
+    float getYRot();
+
+    @Accessor("position")
+    Vec3 getPosition();
 
     @Invoker("setPosition")
     void callSetPosition(Vec3 pos);
+
+    @Invoker("setRotation")
+    void callSetRotation(float yRot, float xRot);
 }
