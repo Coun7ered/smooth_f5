@@ -1,6 +1,7 @@
 package net.countered.smoothf5.mixin;
 
-import net.countered.smoothf5.config.ModConfig;
+import net.countered.smoothf5.config.ConfigPlatform;
+import net.countered.smoothf5.config.SmoothingMode;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
@@ -8,7 +9,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -41,9 +41,9 @@ public abstract class CameraMixin {
             float partialTickTime,
             CallbackInfo ci
     ) {
-        if (!ModConfig.enableSmoothF5()) return;
+        if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
 
-        CameraAccessor acc = (CameraAccessor)(Object)this;
+        CameraAccessor acc = (CameraAccessor) this;
 
         if (!smooth_f5$wasDetached && detached) {
             Vec3 eye = entity.getEyePosition(partialTickTime);
@@ -81,9 +81,9 @@ public abstract class CameraMixin {
             float partialTickTime,
             CallbackInfo ci
     ) {
-        if (!ModConfig.enableSmoothF5()) return;
+        if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
 
-        CameraAccessor acc = (CameraAccessor)(Object)this;
+        CameraAccessor acc = (CameraAccessor) this;
 
         if (!detached) {
             smooth_f5$wasDetached = false;
@@ -117,7 +117,7 @@ public abstract class CameraMixin {
 
         Vec3 diff = targetPos.subtract(smooth_f5$smoothPos);
 
-        float stiffness = ModConfig.posStiffness();
+        float stiffness = ConfigPlatform.getPosStiffness();
         float damping = 2.0f * (float)Math.sqrt(stiffness);
 
 
@@ -133,7 +133,7 @@ public abstract class CameraMixin {
         float yawDiff = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
         float pitchDiff = targetPitch - smooth_f5$smoothPitch;
 
-        float rotStiffness = ModConfig.rotStiffness();
+        float rotStiffness = ConfigPlatform.getRotStiffness();
         float rotDamping = 2.0f * (float)Math.sqrt(rotStiffness);
 
         float yawAccel = yawDiff * rotStiffness;
@@ -149,10 +149,10 @@ public abstract class CameraMixin {
         smooth_f5$smoothYaw += smooth_f5$yawVel * dt;
         smooth_f5$smoothPitch += smooth_f5$pitchVel * dt;
 
-        if (ModConfig.enablePosSmoothing()) {
+        if (ConfigPlatform.enablePosSmoothing()) {
             acc.callSetPosition(smooth_f5$smoothPos);
         }
-        if (ModConfig.enableRotSmoothing()) {
+        if (ConfigPlatform.enableRotSmoothing()) {
             acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
         }
     }
