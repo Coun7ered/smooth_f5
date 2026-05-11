@@ -114,23 +114,24 @@ public abstract class CameraMixin {
     private void smooth_f5$stepPos(Vec3 target, float dt) {
         float stiffness = ConfigPlatform.getPosStiffness();
         float damping = 2.0f * (float)Math.sqrt(stiffness);
-        float expF = (float)Math.exp(-damping * dt);
         Vec3 diff = target.subtract(smooth_f5$smoothPos);
-        smooth_f5$smoothVel = smooth_f5$smoothVel.add(diff.scale(stiffness * dt)).scale(expF);
-        smooth_f5$smoothPos = smooth_f5$smoothPos.add(smooth_f5$smoothVel.scale(dt))
-                .add(diff.scale(1f - expF));
+        smooth_f5$smoothVel = smooth_f5$smoothVel
+                .add(diff.scale(stiffness * dt))
+                .scale((float)Math.exp(-damping * dt));
+        smooth_f5$smoothPos = smooth_f5$smoothPos.add(smooth_f5$smoothVel.scale(dt));
     }
 
     @Unique
     private void smooth_f5$stepRot(float targetYaw, float targetPitch, float dt) {
         float rotStiffness = ConfigPlatform.getRotStiffness();
-        float expF = (float)Math.exp(-2.0f * (float)Math.sqrt(rotStiffness) * dt);
+        float rotDamping = 2.0f * (float)Math.sqrt(rotStiffness);
+        float expF = (float)Math.exp(-rotDamping * dt);
         float yawDiff   = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
         float pitchDiff = targetPitch - smooth_f5$smoothPitch;
         smooth_f5$yawVel   = (smooth_f5$yawVel   + yawDiff   * rotStiffness * dt) * expF;
         smooth_f5$pitchVel = (smooth_f5$pitchVel + pitchDiff * rotStiffness * dt) * expF;
-        smooth_f5$smoothYaw   += smooth_f5$yawVel * dt + yawDiff   * (1f - expF);
-        smooth_f5$smoothPitch += smooth_f5$pitchVel * dt + pitchDiff * (1f - expF);
+        smooth_f5$smoothYaw   += smooth_f5$yawVel * dt;
+        smooth_f5$smoothPitch += smooth_f5$pitchVel * dt;
     }
 
     @Unique

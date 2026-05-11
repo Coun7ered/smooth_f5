@@ -1,4 +1,4 @@
-package net.countered.smoothf5.config.fabric;
+package net.countered.smoothf5.config.neoforge;
 
 import eu.midnightdust.lib.config.MidnightConfig;
 import net.countered.smoothf5.config.SmoothingMode;
