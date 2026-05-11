@@ -8,6 +8,26 @@ public class ConfigPlatformImpl extends MidnightConfig {
     public static final String GENERAL = "general";
     public static final String CAMERA = "camera";
 
+    public static SmoothingMode getSmoothingMode() {
+        return smoothingMode;
+    }
+
+    public static boolean isEnablePosSmoothing() {
+        return enablePosSmoothing;
+    }
+
+    public static boolean isEnableRotSmoothing() {
+        return enableRotSmoothing;
+    }
+
+    public static float getPosStiffness() {
+        return posStiffness;
+    }
+
+    public static float getRotStiffness() {
+        return rotStiffness;
+    }
+
     @Entry(category = GENERAL)
     public static SmoothingMode smoothingMode = SmoothingMode.ALWAYS;
 

@@ -4,12 +4,12 @@ import dev.architectury.injectables.annotations.ExpectPlatform;
 public class ConfigPlatform {
 
     @ExpectPlatform
-    public static boolean enablePosSmoothing() {
+    public static boolean isEnablePosSmoothing() {
         throw new AssertionError();
     }
 
     @ExpectPlatform
-    public static boolean enableRotSmoothing() {
+    public static boolean isEnableRotSmoothing() {
         throw new AssertionError();
     }
 

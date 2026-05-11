@@ -135,7 +135,7 @@ public abstract class CameraMixin {
 
     @Unique
     private void smooth_f5$apply(CameraAccessor acc) {
-        if (ConfigPlatform.enablePosSmoothing()) acc.callSetPosition(smooth_f5$smoothPos);
-        if (ConfigPlatform.enableRotSmoothing()) acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
+        if (ConfigPlatform.isEnablePosSmoothing()) acc.callSetPosition(smooth_f5$smoothPos);
+        if (ConfigPlatform.isEnableRotSmoothing()) acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
     }
 }
