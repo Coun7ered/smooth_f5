@@ -32,6 +32,8 @@ public abstract class CameraMixin {
     @Unique private boolean smooth_f5$wasMirrored = false;
     @Unique private boolean smooth_f5$pendingInit = false;
 
+    @Unique private boolean smooth_f5$isTransitioningToFP = false;
+
     @Inject(method = "setup", at = @At("HEAD"))
     private void onSetupHead(
             Level level,
@@ -42,72 +44,85 @@ public abstract class CameraMixin {
             CallbackInfo ci
     ) {
         if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
-
         CameraAccessor acc = (CameraAccessor) this;
 
         if (!smooth_f5$wasDetached && detached) {
-            Vec3 eye = entity.getEyePosition(partialTickTime);
-            Vec3 forward = entity.getViewVector(partialTickTime);
-            smooth_f5$fpTransitionStartPos = eye.subtract(forward.scale(0.4));
-
-            smooth_f5$fpTransitionYaw = acc.getYRot();
-            smooth_f5$fpTransitionPitch = acc.getXRot();
-
-            smooth_f5$pendingInit = true;
+            smooth_f5$firstToThirdPersonSwitch(entity, partialTickTime, acc);
         }
-
-        if (smooth_f5$wasDetached && detached && !smooth_f5$wasMirrored && mirror) {
-            Vec3 eye = entity.getEyePosition(partialTickTime);
-            Vec3 forward = entity.getViewVector(partialTickTime);
-
-            smooth_f5$fpTransitionStartPos = eye.add(forward.scale(0.4));
-
-            smooth_f5$fpTransitionYaw = Mth.wrapDegrees(entity.getYRot() + 180f);
-            smooth_f5$fpTransitionPitch = - entity.getXRot();
-
-            smooth_f5$pendingInit = true;
+        else if (smooth_f5$wasDetached && detached && !smooth_f5$wasMirrored && mirror) {
+            smooth_f5$thirdToSecondPersonSwitch(entity, partialTickTime);
+        }
+        else if (smooth_f5$wasDetached && !detached) {
+            smooth_f5$isTransitioningToFP = true;
         }
 
         smooth_f5$wasDetached = detached;
         smooth_f5$wasMirrored = mirror;
     }
 
-    @Inject(method = "setup", at = @At("TAIL"))
-    private void onSetupTail(Level level, Entity entity, boolean detached,
-                             boolean mirror, float partialTickTime, CallbackInfo ci) {
-        if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
+    @Unique
+    private void smooth_f5$firstToThirdPersonSwitch(Entity entity, float partialTickTime, CameraAccessor acc) {
+        Vec3 eye = entity.getEyePosition(partialTickTime);
+        Vec3 forward = entity.getViewVector(partialTickTime);
+        smooth_f5$fpTransitionStartPos = eye.subtract(forward.scale(0.4));
+        smooth_f5$fpTransitionYaw = acc.getYRot();
+        smooth_f5$fpTransitionPitch = acc.getXRot();
+        smooth_f5$pendingInit = true;
+    }
 
+    @Unique
+    private void smooth_f5$thirdToSecondPersonSwitch(Entity entity, float partialTickTime) {
+        Vec3 eye = entity.getEyePosition(partialTickTime);
+        Vec3 forward = entity.getViewVector(partialTickTime);
+        smooth_f5$fpTransitionStartPos = eye.add(forward.scale(0.4));
+        smooth_f5$fpTransitionYaw = Mth.wrapDegrees(entity.getYRot() + 180f);
+        smooth_f5$fpTransitionPitch = - entity.getXRot();
+        smooth_f5$pendingInit = true;
+    }
+
+    @Inject(method = "setup", at = @At("TAIL"))
+    private void onSetupTail(
+            Level level,
+            Entity entity,
+            boolean detached,
+            boolean mirror,
+            float partialTickTime,
+            CallbackInfo ci
+    ) {
+        if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
         CameraAccessor acc = (CameraAccessor) this;
 
-        if (!detached) {
+        if (!detached && !smooth_f5$isTransitioningToFP) {
             smooth_f5$wasDetached = false;
             smooth_f5$fpTransitionStartPos = null;
             return;
         }
 
         if (smooth_f5$pendingInit && smooth_f5$fpTransitionStartPos != null) {
-            smooth_f5$snapTo(smooth_f5$fpTransitionStartPos, smooth_f5$fpTransitionYaw,
-                    smooth_f5$fpTransitionPitch, acc);
+            smooth_f5$snapTo(smooth_f5$fpTransitionStartPos, smooth_f5$fpTransitionYaw, smooth_f5$fpTransitionPitch, acc);
             smooth_f5$fpTransitionStartPos = null;
             smooth_f5$pendingInit = false;
             return;
         }
 
         float dt = Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks();
-        smooth_f5$stepPos(acc.getPosition(), dt);
-        smooth_f5$stepRot(acc.getYRot(), acc.getXRot(), dt);
-        smooth_f5$apply(acc);
-    }
 
-    @Unique
-    private void smooth_f5$snapTo(Vec3 pos, float yaw, float pitch, CameraAccessor acc) {
-        smooth_f5$smoothPos = pos;
-        smooth_f5$smoothVel = Vec3.ZERO;
-        smooth_f5$smoothYaw = yaw;
-        smooth_f5$smoothPitch = pitch;
-        smooth_f5$yawVel = smooth_f5$pitchVel = 0f;
-        acc.callSetPosition(pos);
-        acc.callSetRotation(yaw, pitch);
+        Vec3 targetPos = acc.getPosition();
+        float targetYaw = acc.getYRot();
+        float targetPitch = acc.getXRot();
+
+        smooth_f5$stepPos(targetPos, dt);
+        smooth_f5$stepRot(targetYaw, targetPitch, dt);
+
+        if (smooth_f5$isTransitioningToFP) {
+            double distanceSq = smooth_f5$smoothPos.distanceToSqr(targetPos);
+            if (distanceSq < 0.01 && smooth_f5$smoothVel.lengthSqr() < 0.01) {
+                smooth_f5$isTransitioningToFP = false;
+                return;
+            }
+        }
+
+        smooth_f5$apply(acc);
     }
 
     @Unique
@@ -154,6 +169,17 @@ public abstract class CameraMixin {
             dt -= step;
         }
         smooth_f5$smoothYaw = Mth.wrapDegrees(smooth_f5$smoothYaw);
+    }
+
+    @Unique
+    private void smooth_f5$snapTo(Vec3 pos, float yaw, float pitch, CameraAccessor acc) {
+        smooth_f5$smoothPos = pos;
+        smooth_f5$smoothVel = Vec3.ZERO;
+        smooth_f5$smoothYaw = yaw;
+        smooth_f5$smoothPitch = pitch;
+        smooth_f5$yawVel = smooth_f5$pitchVel = 0f;
+        acc.callSetPosition(pos);
+        acc.callSetRotation(yaw, pitch);
     }
 
     @Unique
