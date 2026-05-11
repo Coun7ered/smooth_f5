@@ -24,15 +24,12 @@ public abstract class CameraMixin {
     @Unique private float smooth_f5$smoothPitch;
     @Unique private float smooth_f5$yawVel, smooth_f5$pitchVel;
 
-    @Unique private Vec3 smooth_f5$fpTransitionStartPos = null;
-    @Unique private float smooth_f5$fpTransitionYaw;
-    @Unique private float smooth_f5$fpTransitionPitch;
-
     @Unique private boolean smooth_f5$wasDetached = false;
     @Unique private boolean smooth_f5$wasMirrored = false;
-    @Unique private boolean smooth_f5$pendingInit = false;
+    @Unique private boolean smooth_f5$initialized = false;
 
     @Unique private boolean smooth_f5$isTransitioningToFP = false;
+    @Unique private float smooth_f5$returnProgress = 0f;
 
     @Inject(method = "setup", at = @At("HEAD"))
     private void onSetupHead(
@@ -46,38 +43,45 @@ public abstract class CameraMixin {
         if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
         CameraAccessor acc = (CameraAccessor) this;
 
-        if (!smooth_f5$wasDetached && detached) {
-            smooth_f5$firstToThirdPersonSwitch(entity, partialTickTime, acc);
+        if (smooth_f5$wasDetached != detached || smooth_f5$wasMirrored != mirror) {
+            if (!smooth_f5$initialized) {
+                smooth_f5$snapTo(acc.getPosition(), acc.getYRot(), acc.getXRot(), acc);
+                smooth_f5$initialized = true;
+            }
+            if (!smooth_f5$wasDetached && detached) {
+                smooth_f5$applyOffsetInit(entity, partialTickTime, acc, -0.4);
+                smooth_f5$isTransitioningToFP = false;
+            }
+            else if (smooth_f5$wasDetached && detached && !smooth_f5$wasMirrored && mirror && ConfigPlatform.isUseOldThirdToSecondTransition()) {
+                smooth_f5$applyOffsetInit(entity, partialTickTime, acc, 0.4);
+                smooth_f5$isTransitioningToFP = false;
+            }
+            else if (smooth_f5$wasDetached && !detached) {
+                smooth_f5$isTransitioningToFP = true;
+                smooth_f5$returnProgress = 0f;
+            }
         }
-        else if (smooth_f5$wasDetached && detached && !smooth_f5$wasMirrored && mirror) {
-            smooth_f5$thirdToSecondPersonSwitch(entity, partialTickTime);
-        }
-        else if (smooth_f5$wasDetached && !detached) {
-            smooth_f5$isTransitioningToFP = true;
-        }
-
         smooth_f5$wasDetached = detached;
         smooth_f5$wasMirrored = mirror;
     }
 
     @Unique
-    private void smooth_f5$firstToThirdPersonSwitch(Entity entity, float partialTickTime, CameraAccessor acc) {
+    private void smooth_f5$applyOffsetInit(Entity entity, float partialTickTime, CameraAccessor acc, double offsetScale) {
         Vec3 eye = entity.getEyePosition(partialTickTime);
         Vec3 forward = entity.getViewVector(partialTickTime);
-        smooth_f5$fpTransitionStartPos = eye.subtract(forward.scale(0.4));
-        smooth_f5$fpTransitionYaw = acc.getYRot();
-        smooth_f5$fpTransitionPitch = acc.getXRot();
-        smooth_f5$pendingInit = true;
-    }
+        smooth_f5$smoothPos = eye.add(forward.scale(offsetScale));
 
-    @Unique
-    private void smooth_f5$thirdToSecondPersonSwitch(Entity entity, float partialTickTime) {
-        Vec3 eye = entity.getEyePosition(partialTickTime);
-        Vec3 forward = entity.getViewVector(partialTickTime);
-        smooth_f5$fpTransitionStartPos = eye.add(forward.scale(0.4));
-        smooth_f5$fpTransitionYaw = Mth.wrapDegrees(entity.getYRot() + 180f);
-        smooth_f5$fpTransitionPitch = - entity.getXRot();
-        smooth_f5$pendingInit = true;
+        if (offsetScale > 0) {
+            smooth_f5$smoothYaw = Mth.wrapDegrees(entity.getYRot() + 180f);
+            smooth_f5$smoothPitch = -entity.getXRot();
+        } else {
+            smooth_f5$smoothYaw = acc.getYRot();
+            smooth_f5$smoothPitch = acc.getXRot();
+        }
+
+        smooth_f5$smoothVel = Vec3.ZERO;
+        smooth_f5$yawVel = 0;
+        smooth_f5$pitchVel = 0;
     }
 
     @Inject(method = "setup", at = @At("TAIL"))
@@ -93,15 +97,12 @@ public abstract class CameraMixin {
         CameraAccessor acc = (CameraAccessor) this;
 
         if (!detached && !smooth_f5$isTransitioningToFP) {
-            smooth_f5$wasDetached = false;
-            smooth_f5$fpTransitionStartPos = null;
-            return;
-        }
-
-        if (smooth_f5$pendingInit && smooth_f5$fpTransitionStartPos != null) {
-            smooth_f5$snapTo(smooth_f5$fpTransitionStartPos, smooth_f5$fpTransitionYaw, smooth_f5$fpTransitionPitch, acc);
-            smooth_f5$fpTransitionStartPos = null;
-            smooth_f5$pendingInit = false;
+            smooth_f5$smoothPos = acc.getPosition();
+            smooth_f5$smoothYaw = acc.getYRot();
+            smooth_f5$smoothPitch = acc.getXRot();
+            smooth_f5$smoothVel = Vec3.ZERO;
+            smooth_f5$yawVel = 0;
+            smooth_f5$pitchVel = 0;
             return;
         }
 
@@ -111,15 +112,21 @@ public abstract class CameraMixin {
         float targetYaw = acc.getYRot();
         float targetPitch = acc.getXRot();
 
-        smooth_f5$stepPos(targetPos, dt);
-        smooth_f5$stepRot(targetYaw, targetPitch, dt);
-
         if (smooth_f5$isTransitioningToFP) {
-            double distanceSq = smooth_f5$smoothPos.distanceToSqr(targetPos);
-            if (distanceSq < 0.01 && smooth_f5$smoothVel.lengthSqr() < 0.01) {
+            smooth_f5$returnProgress += dt / Math.max(1.0f, ConfigPlatform.getFPReturnDuration()* 10);
+            if (smooth_f5$returnProgress >= 1.0f) {
                 smooth_f5$isTransitioningToFP = false;
                 return;
             }
+            float invT = 1.0f - smooth_f5$returnProgress;
+            float ease = 1.0f - (invT * invT * invT); // Cubic Ease-Out
+            smooth_f5$smoothPos = smooth_f5$smoothPos.lerp(targetPos, ease);
+            float yawDiff = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
+            smooth_f5$smoothYaw = Mth.wrapDegrees(smooth_f5$smoothYaw + yawDiff * ease);
+            smooth_f5$smoothPitch = Mth.lerp(ease, smooth_f5$smoothPitch, targetPitch);
+        } else {
+            smooth_f5$stepPos(targetPos, dt);
+            smooth_f5$stepRot(targetYaw, targetPitch, dt);
         }
 
         smooth_f5$apply(acc);

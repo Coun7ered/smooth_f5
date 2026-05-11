@@ -24,7 +24,17 @@ public class ConfigPlatform {
     }
 
     @ExpectPlatform
+    public static int getFPReturnDuration() {
+        throw new AssertionError();
+    }
+
+    @ExpectPlatform
     public static SmoothingMode getSmoothingMode() {
+        throw new AssertionError();
+    }
+
+    @ExpectPlatform
+    public static boolean isUseOldThirdToSecondTransition() {
         throw new AssertionError();
     }
 }
