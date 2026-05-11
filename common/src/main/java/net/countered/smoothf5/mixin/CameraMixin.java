@@ -93,7 +93,7 @@ public abstract class CameraMixin {
             return;
         }
 
-        float dt = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaTicks();
+        float dt = Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks();
         smooth_f5$stepPos(acc.getPosition(), dt);
         smooth_f5$stepRot(acc.getYRot(), acc.getXRot(), dt);
         smooth_f5$apply(acc);
@@ -114,24 +114,46 @@ public abstract class CameraMixin {
     private void smooth_f5$stepPos(Vec3 target, float dt) {
         float stiffness = ConfigPlatform.getPosStiffness();
         float damping = 2.0f * (float)Math.sqrt(stiffness);
-        Vec3 diff = target.subtract(smooth_f5$smoothPos);
-        smooth_f5$smoothVel = smooth_f5$smoothVel
-                .add(diff.scale(stiffness * dt))
-                .scale((float)Math.exp(-damping * dt));
-        smooth_f5$smoothPos = smooth_f5$smoothPos.add(smooth_f5$smoothVel.scale(dt));
+
+        float maxSubStep = 0.25f;
+        while (dt > 0) {
+            float step = Math.min(dt, maxSubStep);
+
+            Vec3 diff = target.subtract(smooth_f5$smoothPos);
+            Vec3 acceleration = diff.scale(stiffness).subtract(smooth_f5$smoothVel.scale(damping));
+
+            smooth_f5$smoothVel = smooth_f5$smoothVel.add(acceleration.scale(step));
+            smooth_f5$smoothPos = smooth_f5$smoothPos.add(smooth_f5$smoothVel.scale(step));
+
+            dt -= step;
+        }
     }
 
     @Unique
     private void smooth_f5$stepRot(float targetYaw, float targetPitch, float dt) {
         float rotStiffness = ConfigPlatform.getRotStiffness();
         float rotDamping = 2.0f * (float)Math.sqrt(rotStiffness);
-        float expF = (float)Math.exp(-rotDamping * dt);
-        float yawDiff   = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
-        float pitchDiff = targetPitch - smooth_f5$smoothPitch;
-        smooth_f5$yawVel   = (smooth_f5$yawVel   + yawDiff   * rotStiffness * dt) * expF;
-        smooth_f5$pitchVel = (smooth_f5$pitchVel + pitchDiff * rotStiffness * dt) * expF;
-        smooth_f5$smoothYaw   += smooth_f5$yawVel * dt;
-        smooth_f5$smoothPitch += smooth_f5$pitchVel * dt;
+
+        float maxSubStep = 0.1f;
+
+        while (dt > 0) {
+            float step = Math.min(dt, maxSubStep);
+
+            float yawDiff = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
+            float pitchDiff = targetPitch - smooth_f5$smoothPitch;
+
+            float yawAcc = (yawDiff * rotStiffness) - (smooth_f5$yawVel * rotDamping);
+            float pitchAcc = (pitchDiff * rotStiffness) - (smooth_f5$pitchVel * rotDamping);
+
+            smooth_f5$yawVel += yawAcc * step;
+            smooth_f5$pitchVel += pitchAcc * step;
+
+            smooth_f5$smoothYaw += smooth_f5$yawVel * step;
+            smooth_f5$smoothPitch += smooth_f5$pitchVel * step;
+
+            dt -= step;
+        }
+        smooth_f5$smoothYaw = Mth.wrapDegrees(smooth_f5$smoothYaw);
     }
 
     @Unique
