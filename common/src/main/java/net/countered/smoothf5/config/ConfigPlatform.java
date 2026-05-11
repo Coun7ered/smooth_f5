@@ -27,4 +27,9 @@ public class ConfigPlatform {
     public static SmoothingMode getSmoothingMode() {
         throw new AssertionError();
     }
+
+    @ExpectPlatform
+    public static boolean oldTPToSPTransition()  {
+        throw new AssertionError();
+    }
 }

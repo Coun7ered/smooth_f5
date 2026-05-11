@@ -73,14 +73,8 @@ public abstract class CameraMixin {
     }
 
     @Inject(method = "setup", at = @At("TAIL"))
-    private void onSetupTail(
-            Level level,
-            Entity entity,
-            boolean detached,
-            boolean mirror,
-            float partialTickTime,
-            CallbackInfo ci
-    ) {
+    private void onSetupTail(Level level, Entity entity, boolean detached,
+                             boolean mirror, float partialTickTime, CallbackInfo ci) {
         if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
 
         CameraAccessor acc = (CameraAccessor) this;
@@ -91,69 +85,57 @@ public abstract class CameraMixin {
             return;
         }
 
-        float dt = Minecraft.getInstance()
-                .getDeltaTracker()
-                .getGameTimeDeltaTicks();
-
-        Vec3 targetPos = acc.getPosition();
-        float targetYaw = acc.getYRot();
-        float targetPitch = acc.getXRot();
-
         if (smooth_f5$pendingInit && smooth_f5$fpTransitionStartPos != null) {
-            smooth_f5$smoothPos = smooth_f5$fpTransitionStartPos;
-            smooth_f5$smoothVel = Vec3.ZERO;
-
-            smooth_f5$smoothYaw = smooth_f5$fpTransitionYaw;
-            smooth_f5$smoothPitch = smooth_f5$fpTransitionPitch;
-            smooth_f5$yawVel = smooth_f5$pitchVel = 0f;
-
-            acc.callSetPosition(smooth_f5$smoothPos);
-            acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
-
+            smooth_f5$snapTo(smooth_f5$fpTransitionStartPos, smooth_f5$fpTransitionYaw,
+                    smooth_f5$fpTransitionPitch, acc);
             smooth_f5$fpTransitionStartPos = null;
             smooth_f5$pendingInit = false;
             return;
         }
 
-        Vec3 diff = targetPos.subtract(smooth_f5$smoothPos);
+        float dt = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaTicks();
+        smooth_f5$stepPos(acc.getPosition(), dt);
+        smooth_f5$stepRot(acc.getYRot(), acc.getXRot(), dt);
+        smooth_f5$apply(acc);
+    }
 
+    @Unique
+    private void smooth_f5$snapTo(Vec3 pos, float yaw, float pitch, CameraAccessor acc) {
+        smooth_f5$smoothPos = pos;
+        smooth_f5$smoothVel = Vec3.ZERO;
+        smooth_f5$smoothYaw = yaw;
+        smooth_f5$smoothPitch = pitch;
+        smooth_f5$yawVel = smooth_f5$pitchVel = 0f;
+        acc.callSetPosition(pos);
+        acc.callSetRotation(yaw, pitch);
+    }
+
+    @Unique
+    private void smooth_f5$stepPos(Vec3 target, float dt) {
         float stiffness = ConfigPlatform.getPosStiffness();
         float damping = 2.0f * (float)Math.sqrt(stiffness);
+        float expF = (float)Math.exp(-damping * dt);
+        Vec3 diff = target.subtract(smooth_f5$smoothPos);
+        smooth_f5$smoothVel = smooth_f5$smoothVel.add(diff.scale(stiffness * dt)).scale(expF);
+        smooth_f5$smoothPos = smooth_f5$smoothPos.add(smooth_f5$smoothVel.scale(dt))
+                .add(diff.scale(1f - expF));
+    }
 
-
-        Vec3 accel = diff.scale(stiffness);
-
-        smooth_f5$smoothVel = smooth_f5$smoothVel.add(accel.scale(dt));
-
-        float dampingFactor = (float)Math.exp(-damping * dt);
-        smooth_f5$smoothVel = smooth_f5$smoothVel.scale(dampingFactor);
-
-        smooth_f5$smoothPos = smooth_f5$smoothPos.add(smooth_f5$smoothVel.scale(dt));
-
-        float yawDiff = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
-        float pitchDiff = targetPitch - smooth_f5$smoothPitch;
-
+    @Unique
+    private void smooth_f5$stepRot(float targetYaw, float targetPitch, float dt) {
         float rotStiffness = ConfigPlatform.getRotStiffness();
-        float rotDamping = 2.0f * (float)Math.sqrt(rotStiffness);
+        float expF = (float)Math.exp(-2.0f * (float)Math.sqrt(rotStiffness) * dt);
+        float yawDiff   = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
+        float pitchDiff = targetPitch - smooth_f5$smoothPitch;
+        smooth_f5$yawVel   = (smooth_f5$yawVel   + yawDiff   * rotStiffness * dt) * expF;
+        smooth_f5$pitchVel = (smooth_f5$pitchVel + pitchDiff * rotStiffness * dt) * expF;
+        smooth_f5$smoothYaw   += smooth_f5$yawVel * dt + yawDiff   * (1f - expF);
+        smooth_f5$smoothPitch += smooth_f5$pitchVel * dt + pitchDiff * (1f - expF);
+    }
 
-        float yawAccel = yawDiff * rotStiffness;
-        float pitchAccel = pitchDiff * rotStiffness;
-
-        smooth_f5$yawVel += yawAccel * dt;
-        smooth_f5$pitchVel += pitchAccel * dt;
-
-        float rotDampingFactor = (float)Math.exp(-rotDamping * dt);
-        smooth_f5$yawVel *= rotDampingFactor;
-        smooth_f5$pitchVel *= rotDampingFactor;
-
-        smooth_f5$smoothYaw += smooth_f5$yawVel * dt;
-        smooth_f5$smoothPitch += smooth_f5$pitchVel * dt;
-
-        if (ConfigPlatform.enablePosSmoothing()) {
-            acc.callSetPosition(smooth_f5$smoothPos);
-        }
-        if (ConfigPlatform.enableRotSmoothing()) {
-            acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
-        }
+    @Unique
+    private void smooth_f5$apply(CameraAccessor acc) {
+        if (ConfigPlatform.enablePosSmoothing()) acc.callSetPosition(smooth_f5$smoothPos);
+        if (ConfigPlatform.enableRotSmoothing()) acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
     }
 }
