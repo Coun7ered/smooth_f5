@@ -67,7 +67,7 @@ dependencies {
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
 
     modImplementation include ("eu.midnightdust:midnightlib:1.9.2+1.21.1-fabric")
-    modImplementation("com.terraformersmc:modmenu:17.0.0")
+    modImplementation("com.terraformersmc:modmenu:11.0.4")
 }
 
 processResources {

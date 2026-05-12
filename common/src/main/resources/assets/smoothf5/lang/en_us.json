@@ -3,8 +3,11 @@
   "smooth_f5.midnightconfig.category.general": "General",
   "smooth_f5.midnightconfig.category.camera": "Camera",
   "smooth_f5.midnightconfig.enableSmoothF5": "Enable Smooth F5",
+  "smooth_f5.midnightconfig.smoothingMode": "Smoothing Mode",
   "smooth_f5.midnightconfig.enablePosSmoothing": "Enable Camera Position Smoothing",
   "smooth_f5.midnightconfig.enableRotSmoothing": "Enable Camera Rotation Smoothing",
   "smooth_f5.midnightconfig.posStiffness": "Camera Position Stiffness",
-  "smooth_f5.midnightconfig.rotStiffness": "Camera Rotation Stiffness"
+  "smooth_f5.midnightconfig.rotStiffness": "Camera Rotation Stiffness",
+  "smooth_f5.midnightconfig.returnDuration": "Camera Transition Duration",
+  "smooth_f5.midnightconfig.returnDuration.tooltip": "This only applies to mode TRANSITION as well as the first person return in ALWAYS"
 }
