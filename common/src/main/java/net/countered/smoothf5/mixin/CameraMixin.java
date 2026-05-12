@@ -28,6 +28,8 @@ public abstract class CameraMixin {
     @Unique private boolean smooth_f5$wasMirrored = false;
     @Unique private boolean smooth_f5$initialized = false;
 
+    @Unique private boolean smooth_f5$shouldSnapNextTail = false;
+
     @Unique private Vec3  smooth_f5$transStartPos;
     @Unique private float smooth_f5$transStartYaw;
     @Unique private float smooth_f5$transStartPitch;
@@ -51,41 +53,36 @@ public abstract class CameraMixin {
     ) {
         SmoothingMode mode = ConfigPlatform.getSmoothingMode();
         if (mode == SmoothingMode.NEVER) return;
-
         CameraAccessor acc = (CameraAccessor) this;
 
         // Camera mode changed
         if (smooth_f5$wasDetached != detached || smooth_f5$wasMirrored != mirror) {
-
             // First time initialization
             if (!smooth_f5$initialized) {
                 smooth_f5$snapTo(acc.getPosition(), acc.getYRot(), acc.getXRot(), acc);
                 smooth_f5$initialized = true;
             }
-
-            // No transition
-            if (mode == SmoothingMode.MOVEMENT) {
-                smooth_f5$isTransitioning = false;
-                smooth_f5$snapTo(acc.getPosition(), acc.getYRot(), acc.getXRot(), acc);
-            }
-            // Start transition
-            else {
+            // Start transition (transition or FPReturn)
+            if (mode == SmoothingMode.TRANSITION || (mode == SmoothingMode.ALWAYS && !detached && smooth_f5$wasDetached)) {
                 smooth_f5$transStartPos   = smooth_f5$smoothPos;
                 smooth_f5$transStartYaw   = smooth_f5$smoothYaw;
                 smooth_f5$transStartPitch = smooth_f5$smoothPitch;
                 smooth_f5$transDeltaReady    = false;
                 smooth_f5$isTransitioning = true;
                 smooth_f5$transitionProgress = 0f;
-
                 // Change camera starting position to not be in player head
                 if (detached) {
                     double offset = (!smooth_f5$wasDetached && detached) ? -0.4 : 0.4;
                     if (!(offset > 0 && !ConfigPlatform.isUseOldThirdToSecondTransition())) {
                         smooth_f5$applyOffsetInit(entity, partialTickTime, acc, offset);
-                        smooth_f5$transStartPos   = smooth_f5$smoothPos;
-                        smooth_f5$transStartYaw   = smooth_f5$smoothYaw;
-                        smooth_f5$transStartPitch = smooth_f5$smoothPitch;
                     }
+                }
+            }
+            // No transition
+            else {
+                smooth_f5$isTransitioning = false;
+                if (mode == SmoothingMode.MOVEMENT) {
+                    smooth_f5$shouldSnapNextTail = true;
                 }
             }
         }
@@ -128,12 +125,12 @@ public abstract class CameraMixin {
         }
 
         if (shouldSmooth) {
-            System.out.println("Smoothing");
             if (smooth_f5$isTransitioning) {
                 smooth_f5$applyTransitionLogic(targetPos, targetYaw, targetPitch, dt);
-                System.out.println("1");
+            } else if (smooth_f5$shouldSnapNextTail) {
+                smooth_f5$snapTo(targetPos, targetYaw, targetPitch, acc);
+                smooth_f5$shouldSnapNextTail = false;
             } else {
-                System.out.println("2");
                 smooth_f5$stepPos(targetPos, dt);
                 smooth_f5$stepRot(targetYaw, targetPitch, dt);
             }
