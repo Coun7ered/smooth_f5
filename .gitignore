@@ -11,4 +11,6 @@
 /forge/.gradle/
 /forge/build/
 /forge/run/
-/neoforge
+/neoforge/.gradle/
+/neoforge/build/
+/neoforge/run/

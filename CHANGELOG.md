@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0]
+
+### Added
+- More smoothing options: "MOVEMENT", "TRANSITION", "ALWAYS" 
+- Return to first person smoothing
+
 ## [1.2.0]
 
 ### Added

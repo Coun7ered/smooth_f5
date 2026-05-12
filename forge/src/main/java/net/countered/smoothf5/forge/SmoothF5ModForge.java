@@ -3,7 +3,7 @@ package net.countered.smoothf5.forge;
 import dev.architectury.platform.forge.EventBuses;
 import eu.midnightdust.lib.config.MidnightConfig;
 import net.countered.smoothf5.SmoothF5Mod;
-import net.countered.smoothf5.config.forge.ForgeModConfig;
+import net.countered.smoothf5.config.forge.ConfigPlatformImpl;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
@@ -15,6 +15,6 @@ public final class SmoothF5ModForge {
 
         // Run our common setup.
         SmoothF5Mod.init();
-        MidnightConfig.init(SmoothF5Mod.MOD_ID, ForgeModConfig.class);
+        MidnightConfig.init(SmoothF5Mod.MOD_ID, ConfigPlatformImpl.class);
     }
 }

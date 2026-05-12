@@ -4,16 +4,12 @@ import dev.architectury.injectables.annotations.ExpectPlatform;
 public class ConfigPlatform {
 
     @ExpectPlatform
-    public static boolean enableSmoothF5() {
+    public static boolean isEnablePosSmoothing() {
         throw new AssertionError();
     }
 
     @ExpectPlatform
-    public static boolean enablePosSmoothing() {
-        throw new AssertionError();
-    }
-    @ExpectPlatform
-    public static boolean enableRotSmoothing() {
+    public static boolean isEnableRotSmoothing() {
         throw new AssertionError();
     }
 
@@ -24,6 +20,16 @@ public class ConfigPlatform {
 
     @ExpectPlatform
     public static float getRotStiffness() {
+        throw new AssertionError();
+    }
+
+    @ExpectPlatform
+    public static int getFPReturnDuration() {
+        throw new AssertionError();
+    }
+
+    @ExpectPlatform
+    public static SmoothingMode getSmoothingMode() {
         throw new AssertionError();
     }
 }
