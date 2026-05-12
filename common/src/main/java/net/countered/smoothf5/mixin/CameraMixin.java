@@ -70,13 +70,6 @@ public abstract class CameraMixin {
                 smooth_f5$transDeltaReady    = false;
                 smooth_f5$isTransitioning = true;
                 smooth_f5$transitionProgress = 0f;
-                // Change camera starting position to not be in player head
-                if (detached) {
-                    double offset = (!smooth_f5$wasDetached && detached) ? -0.4 : 0.4;
-                    if (!(offset > 0 && !ConfigPlatform.isUseOldThirdToSecondTransition())) {
-                        smooth_f5$applyOffsetInit(entity, partialTickTime, acc, offset);
-                    }
-                }
             }
             // No transition
             else {
@@ -177,25 +170,6 @@ public abstract class CameraMixin {
             smooth_f5$yawVel      = 0f;
             smooth_f5$pitchVel    = 0f;
         }
-    }
-
-    @Unique
-    private void smooth_f5$applyOffsetInit(Entity entity, float partialTickTime, CameraAccessor acc, double offsetScale) {
-        Vec3 eye = entity.getEyePosition(partialTickTime);
-        Vec3 forward = entity.getViewVector(partialTickTime);
-        smooth_f5$smoothPos = eye.add(forward.scale(offsetScale));
-
-        if (offsetScale > 0) {
-            smooth_f5$smoothYaw = Mth.wrapDegrees(entity.getYRot() + 180f);
-            smooth_f5$smoothPitch = -entity.getXRot();
-        } else {
-            smooth_f5$smoothYaw = acc.getYRot();
-            smooth_f5$smoothPitch = acc.getXRot();
-        }
-
-        smooth_f5$smoothVel = Vec3.ZERO;
-        smooth_f5$yawVel = 0;
-        smooth_f5$pitchVel = 0;
     }
 
     @Unique

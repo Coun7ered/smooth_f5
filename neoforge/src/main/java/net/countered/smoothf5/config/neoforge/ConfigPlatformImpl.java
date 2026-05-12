@@ -16,13 +16,6 @@ public class ConfigPlatformImpl extends MidnightConfig {
     }
 
     @Entry(category = GENERAL)
-    public static boolean useOldThirdToSecondTransition = false;
-
-    public static boolean isUseOldThirdToSecondTransition() {
-        return useOldThirdToSecondTransition;
-    }
-
-    @Entry(category = GENERAL)
     public static boolean enablePosSmoothing = true;
 
     public static boolean isEnablePosSmoothing() {
@@ -51,7 +44,7 @@ public class ConfigPlatformImpl extends MidnightConfig {
     }
 
     @Entry(category = CAMERA,  isSlider = true, min = 1, max = 100, precision = 100)
-    public static int returnDuration = 15;
+    public static int returnDuration = 10;
 
     public static int getFPReturnDuration() {
         return returnDuration;

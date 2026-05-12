@@ -32,9 +32,4 @@ public class ConfigPlatform {
     public static SmoothingMode getSmoothingMode() {
         throw new AssertionError();
     }
-
-    @ExpectPlatform
-    public static boolean isUseOldThirdToSecondTransition() {
-        throw new AssertionError();
-    }
 }
