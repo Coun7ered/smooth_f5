@@ -28,8 +28,17 @@ public abstract class CameraMixin {
     @Unique private boolean smooth_f5$wasMirrored = false;
     @Unique private boolean smooth_f5$initialized = false;
 
-    @Unique private boolean smooth_f5$isTransitioningToFP = false;
-    @Unique private float smooth_f5$returnProgress = 0f;
+    @Unique private Vec3  smooth_f5$transStartPos;
+    @Unique private float smooth_f5$transStartYaw;
+    @Unique private float smooth_f5$transStartPitch;
+
+    @Unique private float smooth_f5$transTargetYaw;
+    @Unique private float smooth_f5$transPrevRawYaw;
+
+    @Unique private boolean smooth_f5$transDeltaReady = false;
+
+    @Unique private boolean smooth_f5$isTransitioning = false;
+    @Unique private float smooth_f5$transitionProgress = 0f;
 
     @Inject(method = "setup", at = @At("HEAD"))
     private void onSetupHead(
@@ -40,29 +49,137 @@ public abstract class CameraMixin {
             float partialTickTime,
             CallbackInfo ci
     ) {
-        if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
+        SmoothingMode mode = ConfigPlatform.getSmoothingMode();
+        if (mode == SmoothingMode.NEVER) return;
+
         CameraAccessor acc = (CameraAccessor) this;
 
+        // Camera mode changed
         if (smooth_f5$wasDetached != detached || smooth_f5$wasMirrored != mirror) {
+
+            // First time initialization
             if (!smooth_f5$initialized) {
                 smooth_f5$snapTo(acc.getPosition(), acc.getYRot(), acc.getXRot(), acc);
                 smooth_f5$initialized = true;
             }
-            if (!smooth_f5$wasDetached && detached) {
-                smooth_f5$applyOffsetInit(entity, partialTickTime, acc, -0.4);
-                smooth_f5$isTransitioningToFP = false;
+
+            // No transition
+            if (mode == SmoothingMode.MOVEMENT) {
+                smooth_f5$isTransitioning = false;
+                smooth_f5$snapTo(acc.getPosition(), acc.getYRot(), acc.getXRot(), acc);
             }
-            else if (smooth_f5$wasDetached && detached && !smooth_f5$wasMirrored && mirror && ConfigPlatform.isUseOldThirdToSecondTransition()) {
-                smooth_f5$applyOffsetInit(entity, partialTickTime, acc, 0.4);
-                smooth_f5$isTransitioningToFP = false;
-            }
-            else if (smooth_f5$wasDetached && !detached) {
-                smooth_f5$isTransitioningToFP = true;
-                smooth_f5$returnProgress = 0f;
+            // Start transition
+            else {
+                smooth_f5$transStartPos   = smooth_f5$smoothPos;
+                smooth_f5$transStartYaw   = smooth_f5$smoothYaw;
+                smooth_f5$transStartPitch = smooth_f5$smoothPitch;
+                smooth_f5$transDeltaReady    = false;
+                smooth_f5$isTransitioning = true;
+                smooth_f5$transitionProgress = 0f;
+
+                // Change camera starting position to not be in player head
+                if (detached) {
+                    double offset = (!smooth_f5$wasDetached && detached) ? -0.4 : 0.4;
+                    if (!(offset > 0 && !ConfigPlatform.isUseOldThirdToSecondTransition())) {
+                        smooth_f5$applyOffsetInit(entity, partialTickTime, acc, offset);
+                        smooth_f5$transStartPos   = smooth_f5$smoothPos;
+                        smooth_f5$transStartYaw   = smooth_f5$smoothYaw;
+                        smooth_f5$transStartPitch = smooth_f5$smoothPitch;
+                    }
+                }
             }
         }
         smooth_f5$wasDetached = detached;
         smooth_f5$wasMirrored = mirror;
+    }
+
+    @Inject(method = "setup", at = @At("TAIL"))
+    private void onSetupTail(
+            Level level,
+            Entity entity,
+            boolean detached,
+            boolean mirror,
+            float partialTickTime,
+            CallbackInfo ci
+    ) {
+        SmoothingMode mode = ConfigPlatform.getSmoothingMode();
+        if (mode == SmoothingMode.NEVER) return;
+        CameraAccessor acc = (CameraAccessor) this;
+
+        // No smoothing in first person
+        if (!detached && !smooth_f5$isTransitioning) {
+            smooth_f5$resetStates(acc);
+            return;
+        }
+
+        float dt = Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks();
+
+        Vec3 targetPos = acc.getPosition();
+        float targetYaw = acc.getYRot();
+        float targetPitch = acc.getXRot();
+
+        boolean shouldSmooth = false;
+
+        switch (mode) {
+            case ALWAYS -> shouldSmooth = true;
+            case TRANSITION -> shouldSmooth = smooth_f5$isTransitioning;
+            case MOVEMENT -> shouldSmooth = detached && !smooth_f5$isTransitioning;
+            case null, default -> shouldSmooth = false;
+        }
+
+        if (shouldSmooth) {
+            System.out.println("Smoothing");
+            if (smooth_f5$isTransitioning) {
+                smooth_f5$applyTransitionLogic(targetPos, targetYaw, targetPitch, dt);
+                System.out.println("1");
+            } else {
+                System.out.println("2");
+                smooth_f5$stepPos(targetPos, dt);
+                smooth_f5$stepRot(targetYaw, targetPitch, dt);
+            }
+        } else {
+            smooth_f5$snapTo(targetPos, targetYaw, targetPitch, acc);
+            if (!detached) smooth_f5$isTransitioning = false;
+        }
+
+        smooth_f5$apply(acc);
+    }
+
+    @Unique
+    private void smooth_f5$applyTransitionLogic(Vec3 targetPos, float targetYaw, float targetPitch, float dt) {
+        if (!smooth_f5$transDeltaReady) {
+            smooth_f5$transTargetYaw  = smooth_f5$transStartYaw
+                    + Mth.wrapDegrees(targetYaw - smooth_f5$transStartYaw);
+            smooth_f5$transPrevRawYaw = targetYaw;
+            smooth_f5$transDeltaReady = true;
+        } else {
+            float frameDelta = Mth.wrapDegrees(targetYaw - smooth_f5$transPrevRawYaw);
+            smooth_f5$transTargetYaw += frameDelta;
+            smooth_f5$transPrevRawYaw = targetYaw;
+        }
+
+        float duration = Math.max(1.0f, ConfigPlatform.getFPReturnDuration());
+        smooth_f5$transitionProgress = Math.min(1.0f,
+                smooth_f5$transitionProgress + dt / duration);
+
+        float t    = smooth_f5$transitionProgress;
+        float ease = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
+
+        smooth_f5$smoothPos   = smooth_f5$transStartPos.lerp(targetPos, ease);
+        smooth_f5$smoothYaw   = Mth.wrapDegrees(
+                smooth_f5$transStartYaw + (smooth_f5$transTargetYaw - smooth_f5$transStartYaw) * ease);
+        smooth_f5$smoothPitch = smooth_f5$transStartPitch
+                + (targetPitch - smooth_f5$transStartPitch) * ease;
+
+        if (smooth_f5$transitionProgress >= 1.0f) {
+            smooth_f5$isTransitioning = false;
+            smooth_f5$smoothPos   = targetPos;
+            smooth_f5$smoothYaw   = targetYaw;
+            smooth_f5$smoothPitch = targetPitch;
+            smooth_f5$smoothVel   = Vec3.ZERO;
+            smooth_f5$yawVel      = 0f;
+            smooth_f5$pitchVel    = 0f;
+        }
     }
 
     @Unique
@@ -82,54 +199,6 @@ public abstract class CameraMixin {
         smooth_f5$smoothVel = Vec3.ZERO;
         smooth_f5$yawVel = 0;
         smooth_f5$pitchVel = 0;
-    }
-
-    @Inject(method = "setup", at = @At("TAIL"))
-    private void onSetupTail(
-            Level level,
-            Entity entity,
-            boolean detached,
-            boolean mirror,
-            float partialTickTime,
-            CallbackInfo ci
-    ) {
-        if (ConfigPlatform.getSmoothingMode().equals(SmoothingMode.NEVER)) return;
-        CameraAccessor acc = (CameraAccessor) this;
-
-        if (!detached && !smooth_f5$isTransitioningToFP) {
-            smooth_f5$smoothPos = acc.getPosition();
-            smooth_f5$smoothYaw = acc.getYRot();
-            smooth_f5$smoothPitch = acc.getXRot();
-            smooth_f5$smoothVel = Vec3.ZERO;
-            smooth_f5$yawVel = 0;
-            smooth_f5$pitchVel = 0;
-            return;
-        }
-
-        float dt = Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks();
-
-        Vec3 targetPos = acc.getPosition();
-        float targetYaw = acc.getYRot();
-        float targetPitch = acc.getXRot();
-
-        if (smooth_f5$isTransitioningToFP) {
-            smooth_f5$returnProgress += dt / Math.max(1.0f, ConfigPlatform.getFPReturnDuration()* 10);
-            if (smooth_f5$returnProgress >= 1.0f) {
-                smooth_f5$isTransitioningToFP = false;
-                return;
-            }
-            float invT = 1.0f - smooth_f5$returnProgress;
-            float ease = 1.0f - (invT * invT * invT); // Cubic Ease-Out
-            smooth_f5$smoothPos = smooth_f5$smoothPos.lerp(targetPos, ease);
-            float yawDiff = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
-            smooth_f5$smoothYaw = Mth.wrapDegrees(smooth_f5$smoothYaw + yawDiff * ease);
-            smooth_f5$smoothPitch = Mth.lerp(ease, smooth_f5$smoothPitch, targetPitch);
-        } else {
-            smooth_f5$stepPos(targetPos, dt);
-            smooth_f5$stepRot(targetYaw, targetPitch, dt);
-        }
-
-        smooth_f5$apply(acc);
     }
 
     @Unique
@@ -184,7 +253,8 @@ public abstract class CameraMixin {
         smooth_f5$smoothVel = Vec3.ZERO;
         smooth_f5$smoothYaw = yaw;
         smooth_f5$smoothPitch = pitch;
-        smooth_f5$yawVel = smooth_f5$pitchVel = 0f;
+        smooth_f5$yawVel = 0f;
+        smooth_f5$pitchVel = 0f;
         acc.callSetPosition(pos);
         acc.callSetRotation(yaw, pitch);
     }
@@ -193,5 +263,15 @@ public abstract class CameraMixin {
     private void smooth_f5$apply(CameraAccessor acc) {
         if (ConfigPlatform.isEnablePosSmoothing()) acc.callSetPosition(smooth_f5$smoothPos);
         if (ConfigPlatform.isEnableRotSmoothing()) acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
+    }
+
+    @Unique
+    private void smooth_f5$resetStates(CameraAccessor acc) {
+        smooth_f5$smoothPos = acc.getPosition();
+        smooth_f5$smoothYaw = acc.getYRot();
+        smooth_f5$smoothPitch = acc.getXRot();
+        smooth_f5$smoothVel = Vec3.ZERO;
+        smooth_f5$yawVel = 0;
+        smooth_f5$pitchVel = 0;
     }
 }
