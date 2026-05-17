@@ -3,10 +3,9 @@ package net.countered.smoothf5.mixin;
 import net.countered.smoothf5.config.ConfigPlatform;
 import net.countered.smoothf5.config.SmoothingMode;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -42,18 +41,14 @@ public abstract class CameraMixin {
     @Unique private boolean smooth_f5$isTransitioning = false;
     @Unique private float smooth_f5$transitionProgress = 0f;
 
-    @Inject(method = "setup", at = @At("HEAD"))
-    private void onSetupHead(
-            Level level,
-            Entity entity,
-            boolean detached,
-            boolean mirror,
-            float partialTickTime,
-            CallbackInfo ci
-    ) {
+    @Inject(method = "update", at = @At("HEAD"))
+    private void onUpdateHead(DeltaTracker deltaTracker, CallbackInfo ci) {
         SmoothingMode mode = ConfigPlatform.getSmoothingMode();
         if (mode == SmoothingMode.NEVER) return;
         CameraAccessor acc = (CameraAccessor) this;
+        Minecraft minecraft = Minecraft.getInstance();
+        boolean detached = !minecraft.options.getCameraType().isFirstPerson();
+        boolean mirror = minecraft.options.getCameraType().isMirrored();
 
         // Camera mode changed
         if (smooth_f5$wasDetached != detached || smooth_f5$wasMirrored != mirror) {
@@ -83,18 +78,12 @@ public abstract class CameraMixin {
         smooth_f5$wasMirrored = mirror;
     }
 
-    @Inject(method = "setup", at = @At("TAIL"))
-    private void onSetupTail(
-            Level level,
-            Entity entity,
-            boolean detached,
-            boolean mirror,
-            float partialTickTime,
-            CallbackInfo ci
-    ) {
+    @Inject(method = "update", at = @At("TAIL"))
+    private void onUpdateTail(DeltaTracker deltaTracker, CallbackInfo ci) {
         SmoothingMode mode = ConfigPlatform.getSmoothingMode();
         if (mode == SmoothingMode.NEVER) return;
         CameraAccessor acc = (CameraAccessor) this;
+        boolean detached = ((Camera) (Object) this).isDetached();
 
         // No smoothing in first person
         if (!detached && !smooth_f5$isTransitioning) {
