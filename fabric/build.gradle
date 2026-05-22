@@ -25,7 +25,7 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     implementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
 
-    implementation "eu.midnightdust:midnightlib:1.9.3+26.1-fabric"
+    implementation include("eu.midnightdust:midnightlib:1.9.3+26.1-fabric")
     implementation "com.terraformersmc:modmenu:18.0.0-beta.1"
 }
 
