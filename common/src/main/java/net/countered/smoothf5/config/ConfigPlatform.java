@@ -1,35 +1,52 @@
 package net.countered.smoothf5.config;
-import dev.architectury.injectables.annotations.ExpectPlatform;
 
-public class ConfigPlatform {
+public final class ConfigPlatform {
+    private static Provider provider;
 
-    @ExpectPlatform
+    private ConfigPlatform() {}
+
+    public static void setProvider(Provider provider) {
+        ConfigPlatform.provider = provider;
+    }
+
+    private static Provider getProvider() {
+        if (provider == null) {
+            throw new IllegalStateException("ConfigPlatform provider not initialized");
+        }
+
+        return provider;
+    }
+
     public static boolean isEnablePosSmoothing() {
-        throw new AssertionError();
+        return getProvider().isEnablePosSmoothing();
     }
 
-    @ExpectPlatform
     public static boolean isEnableRotSmoothing() {
-        throw new AssertionError();
+        return getProvider().isEnableRotSmoothing();
     }
 
-    @ExpectPlatform
     public static float getPosStiffness() {
-        throw new AssertionError();
+        return getProvider().getPosStiffness();
     }
 
-    @ExpectPlatform
     public static float getRotStiffness() {
-        throw new AssertionError();
+        return getProvider().getRotStiffness();
     }
 
-    @ExpectPlatform
     public static int getFPReturnDuration() {
-        throw new AssertionError();
+        return getProvider().getFPReturnDuration();
     }
 
-    @ExpectPlatform
     public static SmoothingMode getSmoothingMode() {
-        throw new AssertionError();
+        return getProvider().getSmoothingMode();
+    }
+
+    public interface Provider {
+        boolean isEnablePosSmoothing();
+        boolean isEnableRotSmoothing();
+        float getPosStiffness();
+        float getRotStiffness();
+        int getFPReturnDuration();
+        SmoothingMode getSmoothingMode();
     }
 }
