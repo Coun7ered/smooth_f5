@@ -1,5 +1,6 @@
 package net.countered.smoothf5.config;
 import dev.architectury.injectables.annotations.ExpectPlatform;
+import net.countered.smoothf5.logic.SmoothingMode;
 
 public class ConfigPlatform {
 

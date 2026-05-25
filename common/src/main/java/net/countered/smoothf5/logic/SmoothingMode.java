@@ -1,4 +1,4 @@
-package net.countered.smoothf5.config;
+package net.countered.smoothf5.logic;
 
 public enum SmoothingMode {
     TRANSITION,

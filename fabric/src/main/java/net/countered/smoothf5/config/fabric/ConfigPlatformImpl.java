@@ -1,7 +1,7 @@
 package net.countered.smoothf5.config.fabric;
 
 import eu.midnightdust.lib.config.MidnightConfig;
-import net.countered.smoothf5.config.SmoothingMode;
+import net.countered.smoothf5.logic.SmoothingMode;
 
 public class ConfigPlatformImpl extends MidnightConfig {
 
