@@ -40,6 +40,14 @@ subprojects {
             name = "Terraformers"
             url = "https://maven.terraformersmc.com/"
         }
+        exclusiveContent {
+            forRepository {
+                maven { url = "https://maven.ryanhcode.dev/releases" }
+            }
+            filter {
+                includeGroup("dev.ryanhcode.sable-companion")
+            }
+        }
     }
 
     loom {

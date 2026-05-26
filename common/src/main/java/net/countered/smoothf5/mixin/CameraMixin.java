@@ -1,5 +1,6 @@
 package net.countered.smoothf5.mixin;
 
+import net.countered.smoothf5.compat.SableCompat;
 import net.countered.smoothf5.logic.CameraSmoother;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -26,6 +27,7 @@ public abstract class CameraMixin {
             float partialTick,
             CallbackInfo ci
     ) {
+        if (SableCompat.disableSmoothF5()) return;
         smooth_f5$smoother.onSetupHead(
                 (CameraAccessor) this,
                 detached,
@@ -42,7 +44,8 @@ public abstract class CameraMixin {
             float partialTick,
             CallbackInfo ci
     ) {
-       smooth_f5$smoother.onSetupTail(
+        if (SableCompat.disableSmoothF5()) return;
+        smooth_f5$smoother.onSetupTail(
                (CameraAccessor) this,
                detached,
                Minecraft.getInstance().getTimer().getGameTimeDeltaTicks()
