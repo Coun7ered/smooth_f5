@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1]
+
+### Fixed
+- Compat with Sable / Create Aeronautics 
+
+(smoothing is now disabled while riding in a sublevel)
+
 ## [1.3.0]
 
 ### Added
