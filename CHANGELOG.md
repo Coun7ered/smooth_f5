@@ -4,6 +4,7 @@
 
 ### Fixed
 - fix chunks unloading on screen edges
+- fix camera not in front of player when in second person using elytra
 
 ***
 

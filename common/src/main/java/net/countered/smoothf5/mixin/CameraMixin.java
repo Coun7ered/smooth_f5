@@ -6,6 +6,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -97,6 +98,7 @@ public abstract class CameraMixin {
         Vec3 targetPos = acc.getPosition();
         float targetYaw = acc.getYRot();
         float targetPitch = acc.getXRot();
+        boolean frontViewFallFlying = smooth_f5$isFrontViewFallFlying();
 
         boolean shouldSmooth = switch (mode) {
             case ALWAYS -> true;
@@ -120,7 +122,19 @@ public abstract class CameraMixin {
             if (!detached) smooth_f5$isTransitioning = false;
         }
 
+        if (frontViewFallFlying) {
+            smooth_f5$resetStates(acc);
+        }
+
         smooth_f5$apply(acc);
+    }
+
+    @Unique
+    private boolean smooth_f5$isFrontViewFallFlying() {
+        Camera camera = (Camera) (Object) this;
+        return Minecraft.getInstance().options.getCameraType().isMirrored()
+                && camera.entity() instanceof LivingEntity entity
+                && entity.isFallFlying();
     }
 
     @Unique
