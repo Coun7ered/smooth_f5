@@ -1,52 +1,36 @@
 package net.countered.smoothf5.config;
 
+import dev.architectury.injectables.annotations.ExpectPlatform;
+
 public final class ConfigPlatform {
-    private static Provider provider;
 
-    private ConfigPlatform() {}
-
-    public static void setProvider(Provider provider) {
-        ConfigPlatform.provider = provider;
-    }
-
-    private static Provider getProvider() {
-        if (provider == null) {
-            throw new IllegalStateException("ConfigPlatform provider not initialized");
-        }
-
-        return provider;
-    }
-
-    public static boolean isEnablePosSmoothing() {
-        return getProvider().isEnablePosSmoothing();
-    }
-
-    public static boolean isEnableRotSmoothing() {
-        return getProvider().isEnableRotSmoothing();
-    }
-
-    public static float getPosStiffness() {
-        return getProvider().getPosStiffness();
-    }
-
-    public static float getRotStiffness() {
-        return getProvider().getRotStiffness();
-    }
-
-    public static int getFPReturnDuration() {
-        return getProvider().getFPReturnDuration();
-    }
-
+    @ExpectPlatform
     public static SmoothingMode getSmoothingMode() {
-        return getProvider().getSmoothingMode();
+        throw new AssertionError();
     }
 
-    public interface Provider {
-        boolean isEnablePosSmoothing();
-        boolean isEnableRotSmoothing();
-        float getPosStiffness();
-        float getRotStiffness();
-        int getFPReturnDuration();
-        SmoothingMode getSmoothingMode();
+    @ExpectPlatform
+    public static boolean isEnablePosSmoothing() {
+        throw new AssertionError();
+    }
+
+    @ExpectPlatform
+    public static boolean isEnableRotSmoothing() {
+        throw new AssertionError();
+    }
+
+    @ExpectPlatform
+    public static float getPosStiffness() {
+        throw new AssertionError();
+    }
+
+    @ExpectPlatform
+    public static float getRotStiffness() {
+        throw new AssertionError();
+    }
+
+    @ExpectPlatform
+    public static int getFPReturnDuration() {
+        throw new AssertionError();
     }
 }
