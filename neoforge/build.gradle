@@ -26,7 +26,7 @@ neoForge {
 }
 
 dependencies {
-    implementation jarJar("eu.midnightdust:midnightlib:1.9.3+26.1-neoforge")
+    implementation jarJar("eu.midnightdust:midnightlib:1.9.3+26.2-neoforge")
 }
 
 processResources {
