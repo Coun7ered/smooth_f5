@@ -22,7 +22,7 @@ publishMods {
         dryRunWebhookUrl = providers.environmentVariable("DISCORD_WEBHOOK")
 
         username = "Smooth F5 Release Bot"
-        avatarUrl = "https://media.forgecdn.net/avatars/thumbnails/1763/89/256/256/639121268224215968.PNG"
+        avatarUrl = "https://media.forgecdn.net/avatars/thumbnails/1454/812/256/256/638944246097643417.JPG"
 
         content = "# Smooth F5 v${project.version} for ${rootProject.minecraft_version} released!\n\n" + getLatestChangelog()
 
