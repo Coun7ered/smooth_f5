@@ -1,7 +1,7 @@
 modLoader = "javafml"
 loaderVersion = "[10,)"
 #issueTrackerURL = ""
-license = "CC-0"
+license = "MIT"
 
 [[mods]]
 modId = "smooth_f5"
@@ -25,6 +25,20 @@ modId = "minecraft"
 type = "required"
 versionRange = "[26.2,)"
 ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.smooth_f5]]
+modId = "architectury"
+type = "required"
+versionRange = "[21.0.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.smooth_f5]]
+modId = "midnightlib"
+type = "required"
+versionRange = "[1.9.2,)"
+ordering = "AFTER"
 side = "BOTH"
 
 [[mixins]]

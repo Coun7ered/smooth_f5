@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.1
+
+### Fixed
+- fix chunks unloading on screen edges
+- fix camera not in front of player when in second person using elytra
+
+***
+
 ## [1.3.0]
 
 ### Added

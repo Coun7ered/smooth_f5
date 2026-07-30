@@ -79,10 +79,11 @@ public abstract class CameraMixin {
         smooth_f5$wasMirrored = mirror;
     }
 
-    @Inject(method = "update", at = @At("TAIL"))
-    private void onUpdateTail(DeltaTracker deltaTracker, CallbackInfo ci) {
+    @Inject(method = "alignWithEntity", at = @At("TAIL"))
+    private void onAlignWithEntityTail(float partialTicks, CallbackInfo ci) {
         SmoothingMode mode = ConfigPlatform.getSmoothingMode();
         if (mode == SmoothingMode.NEVER) return;
+
         CameraAccessor acc = (CameraAccessor) this;
         boolean detached = ((Camera) (Object) this).isDetached();
 
@@ -99,14 +100,12 @@ public abstract class CameraMixin {
         float targetPitch = acc.getXRot();
         boolean frontViewFallFlying = smooth_f5$isFrontViewFallFlying();
 
-        boolean shouldSmooth = false;
-
-        switch (mode) {
-            case ALWAYS -> shouldSmooth = true;
-            case TRANSITION -> shouldSmooth = smooth_f5$isTransitioning;
-            case MOVEMENT -> shouldSmooth = detached && !smooth_f5$isTransitioning;
-            case null, default -> shouldSmooth = false;
-        }
+        boolean shouldSmooth = switch (mode) {
+            case ALWAYS -> true;
+            case TRANSITION -> smooth_f5$isTransitioning;
+            case MOVEMENT -> detached && !smooth_f5$isTransitioning;
+            default -> false;
+        };
 
         if (shouldSmooth) {
             if (smooth_f5$isTransitioning) {
@@ -124,8 +123,7 @@ public abstract class CameraMixin {
         }
 
         if (frontViewFallFlying) {
-            smooth_f5$smoothPos = targetPos;
-            smooth_f5$smoothVel = Vec3.ZERO;
+            smooth_f5$resetStates(acc);
         }
 
         smooth_f5$apply(acc);
