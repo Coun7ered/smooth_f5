@@ -19,7 +19,6 @@ def getLatestChangelog() {
 publishMods {
     discord {
         webhookUrl = providers.environmentVariable("DISCORD_WEBHOOK")
-        dryRunWebhookUrl = providers.environmentVariable("DISCORD_WEBHOOK")
 
         username = "Smooth F5 Release Bot"
         avatarUrl = "https://media.forgecdn.net/avatars/thumbnails/1454/812/256/256/638944246097643417.JPG"
