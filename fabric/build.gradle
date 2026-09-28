@@ -5,7 +5,7 @@ plugins {
 
 publishMods {
     file = tasks.named("shadowJar").flatMap { it.archiveFile }
-    displayName = file.map { it.asFile.name }
+    displayName = "Smooth F5 v${project.version}-${rootProject.minecraft_version}"
 
     changelog = getLatestChangelog()
     type = STABLE
@@ -62,8 +62,6 @@ configurations {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:$rootProject.minecraft_version"
-
     implementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     // Fabric API. This is technically optional, but you probably want it anyway.
     implementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
@@ -86,9 +84,26 @@ processResources {
     }
 }
 
+// Minecraft is not obfuscated on this version, so there is no remapJar task.
+// The shaded jar is the mod jar that ships.
+jar {
+    archiveClassifier = 'dev'
+}
+
 shadowJar {
     configurations = [project.configurations.shadowBundle]
-    archiveClassifier = ''
+    archiveClassifier = null
+}
 
-    archiveFileName = "Smooth F5 v${project.version}-${rootProject.minecraft_version}.jar"
+assemble.dependsOn shadowJar
+
+configurations {
+    apiElements {
+        outgoing.artifacts.clear()
+        outgoing.artifact(shadowJar)
+    }
+    runtimeElements {
+        outgoing.artifacts.clear()
+        outgoing.artifact(shadowJar)
+    }
 }
