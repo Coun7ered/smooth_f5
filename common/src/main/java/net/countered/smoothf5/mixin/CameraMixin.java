@@ -1,6 +1,6 @@
 package net.countered.smoothf5.mixin;
 
-import net.countered.smoothf5.config.ConfigPlatform;
+import net.countered.smoothf5.config.SmoothF5Config;
 import net.countered.smoothf5.config.SmoothingMode;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -44,7 +44,7 @@ public abstract class CameraMixin {
 
     @Inject(method = "update", at = @At("HEAD"))
     private void onUpdateHead(DeltaTracker deltaTracker, CallbackInfo ci) {
-        SmoothingMode mode = ConfigPlatform.getSmoothingMode();
+        SmoothingMode mode = SmoothF5Config.smoothingMode;
         if (mode == SmoothingMode.NEVER) return;
         CameraAccessor acc = (CameraAccessor) this;
         Minecraft minecraft = Minecraft.getInstance();
@@ -79,9 +79,9 @@ public abstract class CameraMixin {
         smooth_f5$wasMirrored = mirror;
     }
 
-    @Inject(method = "alignWithEntity", at = @At("TAIL"))
-    private void onAlignWithEntityTail(float partialTicks, CallbackInfo ci) {
-        SmoothingMode mode = ConfigPlatform.getSmoothingMode();
+    @Inject(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;alignWithEntity(F)V", shift = At.Shift.AFTER))
+    private void onAlignWithEntityTail(DeltaTracker deltaTracker, CallbackInfo ci) {
+        SmoothingMode mode = SmoothF5Config.smoothingMode;
         if (mode == SmoothingMode.NEVER) return;
 
         CameraAccessor acc = (CameraAccessor) this;
@@ -150,7 +150,7 @@ public abstract class CameraMixin {
             smooth_f5$transPrevRawYaw = targetYaw;
         }
 
-        float duration = Math.max(1.0f, ConfigPlatform.getFPReturnDuration());
+        float duration = Math.max(1.0f, SmoothF5Config.returnDuration);
         smooth_f5$transitionProgress = Math.min(1.0f,
                 smooth_f5$transitionProgress + dt / duration);
 
@@ -176,7 +176,7 @@ public abstract class CameraMixin {
 
     @Unique
     private void smooth_f5$stepPos(Vec3 target, float dt) {
-        float stiffness = ConfigPlatform.getPosStiffness();
+        float stiffness = SmoothF5Config.posStiffness;
         float damping = 2.0f * (float)Math.sqrt(stiffness);
 
         float maxSubStep = 0.25f;
@@ -195,7 +195,7 @@ public abstract class CameraMixin {
 
     @Unique
     private void smooth_f5$stepRot(float targetYaw, float targetPitch, float dt) {
-        float rotStiffness = ConfigPlatform.getRotStiffness();
+        float rotStiffness = SmoothF5Config.rotStiffness;
         float rotDamping = 2.0f * (float)Math.sqrt(rotStiffness);
 
         float maxSubStep = 0.1f;
@@ -234,8 +234,8 @@ public abstract class CameraMixin {
 
     @Unique
     private void smooth_f5$apply(CameraAccessor acc) {
-        if (ConfigPlatform.isEnablePosSmoothing()) acc.callSetPosition(smooth_f5$smoothPos);
-        if (ConfigPlatform.isEnableRotSmoothing()) acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
+        if (SmoothF5Config.enablePosSmoothing) acc.callSetPosition(smooth_f5$smoothPos);
+        if (SmoothF5Config.enableRotSmoothing) acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
     }
 
     @Unique
