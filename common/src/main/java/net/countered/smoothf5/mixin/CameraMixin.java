@@ -1,12 +1,8 @@
 package net.countered.smoothf5.mixin;
 
-import net.countered.smoothf5.config.SmoothF5Config;
-import net.countered.smoothf5.config.SmoothingMode;
+import net.countered.smoothf5.camera.SmoothCameraController;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,234 +13,55 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Camera.class)
 public abstract class CameraMixin {
 
-    @Unique private Vec3 smooth_f5$smoothPos = Vec3.ZERO;
-    @Unique private Vec3 smooth_f5$smoothVel = Vec3.ZERO;
+    @Unique
+    private final SmoothCameraController smooth_f5$controller = new SmoothCameraController();
 
-    @Unique private float smooth_f5$smoothYaw;
-    @Unique private float smooth_f5$smoothPitch;
-    @Unique private float smooth_f5$yawVel, smooth_f5$pitchVel;
+    @Unique
+    private Vec3 smooth_f5$preMovePos = Vec3.ZERO;
 
-    @Unique private boolean smooth_f5$wasDetached = false;
-    @Unique private boolean smooth_f5$wasMirrored = false;
-    @Unique private boolean smooth_f5$initialized = false;
-
-    @Unique private boolean smooth_f5$shouldSnapNextTail = false;
-
-    @Unique private Vec3  smooth_f5$transStartPos;
-    @Unique private float smooth_f5$transStartYaw;
-    @Unique private float smooth_f5$transStartPitch;
-
-    @Unique private float smooth_f5$transTargetYaw;
-    @Unique private float smooth_f5$transPrevRawYaw;
-
-    @Unique private boolean smooth_f5$transDeltaReady = false;
-
-    @Unique private boolean smooth_f5$isTransitioning = false;
-    @Unique private float smooth_f5$transitionProgress = 0f;
+    @Unique
+    private Vec3 smooth_f5$moveDelta = Vec3.ZERO;
 
     @Inject(method = "update", at = @At("HEAD"))
-    private void onUpdateHead(DeltaTracker deltaTracker, CallbackInfo ci) {
-        SmoothingMode mode = SmoothF5Config.smoothingMode;
-        if (mode == SmoothingMode.NEVER) return;
-        CameraAccessor acc = (CameraAccessor) this;
-        Minecraft minecraft = Minecraft.getInstance();
-        boolean detached = !minecraft.options.getCameraType().isFirstPerson();
-        boolean mirror = minecraft.options.getCameraType().isMirrored();
-
-        // Camera mode changed
-        if (smooth_f5$wasDetached != detached || smooth_f5$wasMirrored != mirror) {
-            // First time initialization
-            if (!smooth_f5$initialized) {
-                smooth_f5$snapTo(acc.getPosition(), acc.getYRot(), acc.getXRot(), acc);
-                smooth_f5$initialized = true;
-            }
-            // Start transition (transition or FPReturn)
-            if (mode == SmoothingMode.TRANSITION || (mode == SmoothingMode.ALWAYS && !detached && smooth_f5$wasDetached)) {
-                smooth_f5$transStartPos   = smooth_f5$smoothPos;
-                smooth_f5$transStartYaw   = smooth_f5$smoothYaw;
-                smooth_f5$transStartPitch = smooth_f5$smoothPitch;
-                smooth_f5$transDeltaReady    = false;
-                smooth_f5$isTransitioning = true;
-                smooth_f5$transitionProgress = 0f;
-            }
-            // No transition
-            else {
-                smooth_f5$isTransitioning = false;
-                if (mode == SmoothingMode.MOVEMENT) {
-                    smooth_f5$shouldSnapNextTail = true;
-                }
-            }
-        }
-        smooth_f5$wasDetached = detached;
-        smooth_f5$wasMirrored = mirror;
+    private void smooth_f5$onUpdateHead(DeltaTracker deltaTracker, CallbackInfo ci) {
+        smooth_f5$moveDelta = Vec3.ZERO;
+        smooth_f5$controller.onUpdateHead((Camera) (Object) this);
     }
 
-    @Inject(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;alignWithEntity(F)V", shift = At.Shift.AFTER))
-    private void onAlignWithEntityTail(DeltaTracker deltaTracker, CallbackInfo ci) {
-        SmoothingMode mode = SmoothF5Config.smoothingMode;
-        if (mode == SmoothingMode.NEVER) return;
-
-        CameraAccessor acc = (CameraAccessor) this;
-        boolean detached = ((Camera) (Object) this).isDetached();
-
-        // No smoothing in first person
-        if (!detached && !smooth_f5$isTransitioning) {
-            smooth_f5$resetStates(acc);
-            return;
-        }
-
-        float dt = Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks();
-
-        Vec3 targetPos = acc.getPosition();
-        float targetYaw = acc.getYRot();
-        float targetPitch = acc.getXRot();
-        boolean frontViewFallFlying = smooth_f5$isFrontViewFallFlying();
-
-        boolean shouldSmooth = switch (mode) {
-            case ALWAYS -> true;
-            case TRANSITION -> smooth_f5$isTransitioning;
-            case MOVEMENT -> detached && !smooth_f5$isTransitioning;
-            default -> false;
-        };
-
-        if (shouldSmooth) {
-            if (smooth_f5$isTransitioning) {
-                smooth_f5$applyTransitionLogic(targetPos, targetYaw, targetPitch, dt);
-            } else if (smooth_f5$shouldSnapNextTail) {
-                smooth_f5$snapTo(targetPos, targetYaw, targetPitch, acc);
-                smooth_f5$shouldSnapNextTail = false;
-            } else {
-                smooth_f5$stepPos(targetPos, dt);
-                smooth_f5$stepRot(targetYaw, targetPitch, dt);
-            }
-        } else {
-            smooth_f5$snapTo(targetPos, targetYaw, targetPitch, acc);
-            if (!detached) smooth_f5$isTransitioning = false;
-        }
-
-        if (frontViewFallFlying) {
-            smooth_f5$resetStates(acc);
-        }
-
-        smooth_f5$apply(acc);
+    @Inject(
+            method = "alignWithEntity",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/Camera;move(FFF)V",
+                    ordinal = 0
+            )
+    )
+    private void smooth_f5$beforeDetachedMove(float partialTicks, CallbackInfo ci) {
+        smooth_f5$preMovePos = ((CameraAccessor) this).getPosition();
     }
 
-    @Unique
-    private boolean smooth_f5$isFrontViewFallFlying() {
-        Camera camera = (Camera) (Object) this;
-        return Minecraft.getInstance().options.getCameraType().isMirrored()
-                && camera.entity() instanceof LivingEntity entity
-                && entity.isFallFlying();
+    @Inject(
+            method = "alignWithEntity",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/Camera;move(FFF)V",
+                    ordinal = 0,
+                    shift = At.Shift.AFTER
+            )
+    )
+    private void smooth_f5$afterDetachedMove(float partialTicks, CallbackInfo ci) {
+        smooth_f5$moveDelta = ((CameraAccessor) this).getPosition().subtract(smooth_f5$preMovePos);
     }
 
-    @Unique
-    private void smooth_f5$applyTransitionLogic(Vec3 targetPos, float targetYaw, float targetPitch, float dt) {
-        if (!smooth_f5$transDeltaReady) {
-            smooth_f5$transTargetYaw  = smooth_f5$transStartYaw
-                    + Mth.wrapDegrees(targetYaw - smooth_f5$transStartYaw);
-            smooth_f5$transPrevRawYaw = targetYaw;
-            smooth_f5$transDeltaReady = true;
-        } else {
-            float frameDelta = Mth.wrapDegrees(targetYaw - smooth_f5$transPrevRawYaw);
-            smooth_f5$transTargetYaw += frameDelta;
-            smooth_f5$transPrevRawYaw = targetYaw;
-        }
-
-        float duration = Math.max(1.0f, SmoothF5Config.returnDuration);
-        smooth_f5$transitionProgress = Math.min(1.0f,
-                smooth_f5$transitionProgress + dt / duration);
-
-        float t    = smooth_f5$transitionProgress;
-        float ease = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
-
-        smooth_f5$smoothPos   = smooth_f5$transStartPos.lerp(targetPos, ease);
-        smooth_f5$smoothYaw   = Mth.wrapDegrees(
-                smooth_f5$transStartYaw + (smooth_f5$transTargetYaw - smooth_f5$transStartYaw) * ease);
-        smooth_f5$smoothPitch = smooth_f5$transStartPitch
-                + (targetPitch - smooth_f5$transStartPitch) * ease;
-
-        if (smooth_f5$transitionProgress >= 1.0f) {
-            smooth_f5$isTransitioning = false;
-            smooth_f5$smoothPos   = targetPos;
-            smooth_f5$smoothYaw   = targetYaw;
-            smooth_f5$smoothPitch = targetPitch;
-            smooth_f5$smoothVel   = Vec3.ZERO;
-            smooth_f5$yawVel      = 0f;
-            smooth_f5$pitchVel    = 0f;
-        }
-    }
-
-    @Unique
-    private void smooth_f5$stepPos(Vec3 target, float dt) {
-        float stiffness = SmoothF5Config.posStiffness;
-        float damping = 2.0f * (float)Math.sqrt(stiffness);
-
-        float maxSubStep = 0.25f;
-        while (dt > 0) {
-            float step = Math.min(dt, maxSubStep);
-
-            Vec3 diff = target.subtract(smooth_f5$smoothPos);
-            Vec3 acceleration = diff.scale(stiffness).subtract(smooth_f5$smoothVel.scale(damping));
-
-            smooth_f5$smoothVel = smooth_f5$smoothVel.add(acceleration.scale(step));
-            smooth_f5$smoothPos = smooth_f5$smoothPos.add(smooth_f5$smoothVel.scale(step));
-
-            dt -= step;
-        }
-    }
-
-    @Unique
-    private void smooth_f5$stepRot(float targetYaw, float targetPitch, float dt) {
-        float rotStiffness = SmoothF5Config.rotStiffness;
-        float rotDamping = 2.0f * (float)Math.sqrt(rotStiffness);
-
-        float maxSubStep = 0.1f;
-
-        while (dt > 0) {
-            float step = Math.min(dt, maxSubStep);
-
-            float yawDiff = Mth.wrapDegrees(targetYaw - smooth_f5$smoothYaw);
-            float pitchDiff = targetPitch - smooth_f5$smoothPitch;
-
-            float yawAcc = (yawDiff * rotStiffness) - (smooth_f5$yawVel * rotDamping);
-            float pitchAcc = (pitchDiff * rotStiffness) - (smooth_f5$pitchVel * rotDamping);
-
-            smooth_f5$yawVel += yawAcc * step;
-            smooth_f5$pitchVel += pitchAcc * step;
-
-            smooth_f5$smoothYaw += smooth_f5$yawVel * step;
-            smooth_f5$smoothPitch += smooth_f5$pitchVel * step;
-
-            dt -= step;
-        }
-        smooth_f5$smoothYaw = Mth.wrapDegrees(smooth_f5$smoothYaw);
-    }
-
-    @Unique
-    private void smooth_f5$snapTo(Vec3 pos, float yaw, float pitch, CameraAccessor acc) {
-        smooth_f5$smoothPos = pos;
-        smooth_f5$smoothVel = Vec3.ZERO;
-        smooth_f5$smoothYaw = yaw;
-        smooth_f5$smoothPitch = pitch;
-        smooth_f5$yawVel = 0f;
-        smooth_f5$pitchVel = 0f;
-        acc.callSetPosition(pos);
-        acc.callSetRotation(yaw, pitch);
-    }
-
-    @Unique
-    private void smooth_f5$apply(CameraAccessor acc) {
-        if (SmoothF5Config.enablePosSmoothing) acc.callSetPosition(smooth_f5$smoothPos);
-        if (SmoothF5Config.enableRotSmoothing) acc.callSetRotation(smooth_f5$smoothYaw, smooth_f5$smoothPitch);
-    }
-
-    @Unique
-    private void smooth_f5$resetStates(CameraAccessor acc) {
-        smooth_f5$smoothPos = acc.getPosition();
-        smooth_f5$smoothYaw = acc.getYRot();
-        smooth_f5$smoothPitch = acc.getXRot();
-        smooth_f5$smoothVel = Vec3.ZERO;
-        smooth_f5$yawVel = 0;
-        smooth_f5$pitchVel = 0;
+    @Inject(
+            method = "update",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/Camera;alignWithEntity(F)V",
+                    shift = At.Shift.AFTER
+            )
+    )
+    private void smooth_f5$onAlignWithEntityTail(DeltaTracker deltaTracker, CallbackInfo ci) {
+        smooth_f5$controller.onAlignWithEntityTail((Camera) (Object) this, smooth_f5$moveDelta);
     }
 }
