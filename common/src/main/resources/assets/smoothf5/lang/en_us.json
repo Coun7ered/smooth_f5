@@ -1,13 +1,65 @@
 {
   "smooth_f5.midnightconfig.title": "Smooth F5",
+
   "smooth_f5.midnightconfig.category.general": "General",
-  "smooth_f5.midnightconfig.category.camera": "Camera",
-  "smooth_f5.midnightconfig.enableSmoothF5": "Enable Smooth F5",
+  "smooth_f5.midnightconfig.category.position": "Position & Distance",
+  "smooth_f5.midnightconfig.category.rotation": "Rotation",
+  "smooth_f5.midnightconfig.category.transitions": "Transitions",
+
+  "smooth_f5.midnightconfig.generalHeader": "§lCore Behavior",
+  "smooth_f5.midnightconfig.viewsHeader": "§lActive Perspectives",
+  "smooth_f5.midnightconfig.positionHeader": "§lFollow Smoothing",
+  "smooth_f5.midnightconfig.safetyHeader": "§lDistance & Collision Safeguards",
+  "smooth_f5.midnightconfig.rotationHeader": "§lRotation Smoothing",
+  "smooth_f5.midnightconfig.transitionsHeader": "§lPerspective Switching",
+
   "smooth_f5.midnightconfig.smoothingMode": "Smoothing Mode",
-  "smooth_f5.midnightconfig.enablePosSmoothing": "Enable Camera Position Smoothing",
-  "smooth_f5.midnightconfig.enableRotSmoothing": "Enable Camera Rotation Smoothing",
-  "smooth_f5.midnightconfig.posStiffness": "Camera Position Stiffness",
-  "smooth_f5.midnightconfig.rotStiffness": "Camera Rotation Stiffness",
-  "smooth_f5.midnightconfig.returnDuration": "Camera Transition Duration",
-  "smooth_f5.midnightconfig.returnDuration.tooltip": "This only applies to mode TRANSITION as well as the first person return in ALWAYS"
+  "smooth_f5.midnightconfig.smoothingMode.tooltip": "Controls when Smooth F5 is active: transitions only, movement only, both, or disabled.",
+  "smooth_f5.midnightconfig.followSpace": "Follow Space",
+  "smooth_f5.midnightconfig.followSpace.tooltip": "World Space gives pure trailing smoothing; Movement-Centered keeps movement locked and smooths rotation orbit; Rotation-Centered keeps rotation locked and lets movement pull free from the camera.",
+  "smooth_f5.midnightconfig.smoothBackView": "Smooth Third-Person Back",
+  "smooth_f5.midnightconfig.smoothBackView.tooltip": "Enable smoothing in standard third-person back view.",
+  "smooth_f5.midnightconfig.smoothFrontView": "Smooth Third-Person Front",
+  "smooth_f5.midnightconfig.smoothFrontView.tooltip": "Enable smoothing in mirrored third-person front view.",
+
+  "smooth_f5.midnightconfig.posResponsiveness": "Position Responsiveness",
+  "smooth_f5.midnightconfig.posResponsiveness.tooltip": "Higher values follow the player more tightly with less lag; lower values feel softer and more cinematic.",
+  "smooth_f5.midnightconfig.verticalResponsivenessScale": "Vertical Responsiveness Scale",
+  "smooth_f5.midnightconfig.verticalResponsivenessScale.tooltip": "Multiplier for vertical smoothing speed (stairs, slabs, jumping) relative to horizontal speed.",
+  "smooth_f5.midnightconfig.adaptiveSpeed": "Adaptive Speed Smoothing",
+  "smooth_f5.midnightconfig.adaptiveSpeed.tooltip": "Increases responsiveness when sprinting, boating, or flying so the camera never falls far behind.",
+  "smooth_f5.midnightconfig.adaptiveSpeedBoost": "Adaptive Speed Boost",
+  "smooth_f5.midnightconfig.adaptiveSpeedBoost.tooltip": "How strongly responsiveness increases at high speeds when Adaptive Speed Smoothing is enabled.",
+  "smooth_f5.midnightconfig.minPlayerDistanceRatio": "Min Player Distance Ratio",
+  "smooth_f5.midnightconfig.minPlayerDistanceRatio.tooltip": "Prevents the camera from getting closer than this fraction of vanilla distance or crossing behind the player when sprinting toward the camera.",
+  "smooth_f5.midnightconfig.maxLagDistance": "Max Trailing Lag (Blocks)",
+  "smooth_f5.midnightconfig.maxLagDistance.tooltip": "Maximum distance the smoothed camera may lag behind the target position.",
+  "smooth_f5.midnightconfig.preventWallClipping": "Prevent Wall Clipping",
+  "smooth_f5.midnightconfig.preventWallClipping.tooltip": "Clips the smoothed camera position against solid blocks so it never passes inside walls.",
+  "smooth_f5.midnightconfig.smoothWallZoom": "Smooth Wall Zoom Recovery",
+  "smooth_f5.midnightconfig.smoothWallZoom.tooltip": "Snaps inward immediately when hitting a wall, then smoothly eases back out once space clears.",
+
+  "smooth_f5.midnightconfig.enableRotSmoothing": "Enable Rotation Smoothing",
+  "smooth_f5.midnightconfig.enableRotSmoothing.tooltip": "Smoothly damps mouse rotation during third-person gameplay (perspective transitions always animate rotation smoothly).",
+  "smooth_f5.midnightconfig.rotResponsiveness": "Rotation Responsiveness",
+  "smooth_f5.midnightconfig.rotResponsiveness.tooltip": "Higher values follow mouse rotation faster with less delay.",
+
+  "smooth_f5.midnightconfig.transitionStyle": "Transition Style",
+  "smooth_f5.midnightconfig.transitionStyle.tooltip": "ORBIT swings smoothly around the player when switching Back <-> Front; EASE_OUT zooms cleanly out from the player's head instead of passing through it.",
+  "smooth_f5.midnightconfig.transitionDurationMs": "Transition Duration (ms)",
+  "smooth_f5.midnightconfig.transitionDurationMs.tooltip": "Duration of third-person perspective transitions in milliseconds.",
+  "smooth_f5.midnightconfig.firstPersonReturnDurationMs": "First-Person Return (ms)",
+  "smooth_f5.midnightconfig.firstPersonReturnDurationMs.tooltip": "Duration when returning to first-person view in milliseconds.",
+
+  "smooth_f5.midnightconfig.enum.SmoothingMode.TRANSITION": "Transitions Only",
+  "smooth_f5.midnightconfig.enum.SmoothingMode.MOVEMENT": "Movement Only",
+  "smooth_f5.midnightconfig.enum.SmoothingMode.ALWAYS": "Always",
+  "smooth_f5.midnightconfig.enum.SmoothingMode.NEVER": "Disabled",
+
+  "smooth_f5.midnightconfig.enum.FollowSpace.WORLD": "World Space",
+  "smooth_f5.midnightconfig.enum.FollowSpace.PLAYER_RELATIVE": "Movement-Centered",
+  "smooth_f5.midnightconfig.enum.FollowSpace.ROTATION_CENTERED": "Rotation-Centered",
+
+  "smooth_f5.midnightconfig.enum.TransitionStyle.ORBIT": "Orbit Around Player",
+  "smooth_f5.midnightconfig.enum.TransitionStyle.EASE_OUT": "Ease Out"
 }

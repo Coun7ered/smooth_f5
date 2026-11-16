@@ -1,7 +1,9 @@
 package net.countered.smoothf5.mixin;
 
 import net.minecraft.client.Camera;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
@@ -17,6 +19,9 @@ public interface CameraAccessor {
 
     @Accessor("position")
     Vec3 getPosition();
+
+    @Accessor("level")
+    @Nullable Level getLevel();
 
     @Invoker("setPosition")
     void callSetPosition(Vec3 pos);
