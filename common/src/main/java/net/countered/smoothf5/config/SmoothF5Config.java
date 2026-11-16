@@ -62,7 +62,7 @@ public class SmoothF5Config extends MidnightConfig {
     public static float maxLagDistance = 2.0f;
 
     @Entry(category = POSITION)
-    public static boolean preventWallClipping = false;
+    public static boolean preventWallClipping = true;
 
     @Condition(requiredOption = "preventWallClipping", visibleButLocked = true)
     @Entry(category = POSITION)
@@ -77,8 +77,8 @@ public class SmoothF5Config extends MidnightConfig {
     public static boolean enableRotSmoothing = false;
 
     @Condition(requiredOption = "enableRotSmoothing", visibleButLocked = true)
-    @Entry(category = ROTATION, isSlider = true, min = 1.0f, max = 100.0f, precision = 10)
-    public static float rotResponsiveness = 35.0f;
+    @Entry(category = ROTATION, isSlider = true, min = 1.0f, max = 100.0f, precision = 100)
+    public static float rotResponsiveness = 10.0f;
 
     // ==================== Transitions ====================
 
@@ -89,8 +89,8 @@ public class SmoothF5Config extends MidnightConfig {
     public static TransitionStyle transitionStyle = TransitionStyle.ORBIT;
 
     @Entry(category = TRANSITIONS, isSlider = true, min = 50, max = 1000, precision = 1)
-    public static int transitionDurationMs = 220;
+    public static int transitionDurationMs = 300;
 
     @Entry(category = TRANSITIONS, isSlider = true, min = 50, max = 1000, precision = 1)
-    public static int firstPersonReturnDurationMs = 160;
+    public static int firstPersonReturnDurationMs = 200;
 }

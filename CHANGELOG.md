@@ -1,4 +1,16 @@
-# Changelog
+﻿# Changelog
+
+## v1.4.0
+
+### Added
+- Three camera follow spaces: World Space, Movement-Centered, and Rotation-Centered
+- Distance and collision safeguards: Min Player Distance Ratio, Max Trailing Lag, Prevent Wall Clipping, and Smooth Wall Zoom Recovery
+- More config options
+
+### Fixed
+- Fix camera bouncing with Smooth Steps and other camera-modifying mods
+
+***
 
 ## v1.3.1
 

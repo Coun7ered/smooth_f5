@@ -281,7 +281,18 @@ public final class SmoothCameraController {
             case ROTATION_CENTERED -> stepRotationCenteredPosition(eyePos, desiredTargetPos, dtSec);
             case WORLD -> stepWorldPosition(eyePos, desiredTargetPos, dtSec);
         }
+
+        double preClipDist = state.smoothPos.distanceTo(eyePos);
         state.smoothPos = clipIfEnabled(camera, eyePos, state.smoothPos);
+        if (SmoothF5Config.preventWallClipping && SmoothF5Config.smoothWallZoom) {
+            double clippedDist = state.smoothPos.distanceTo(eyePos);
+            if (clippedDist < preClipDist - 1.0e-3) {
+                state.smoothFollowDist = (float) Math.min(state.smoothFollowDist, clippedDist);
+                if (space == FollowSpace.PLAYER_RELATIVE) {
+                    state.smoothRelativeOffset = state.smoothPos.subtract(eyePos);
+                }
+            }
+        }
     }
 
     private void stepRelativePosition(Vec3 eyePos, Vec3 targetPos, float dtSec) {
@@ -289,7 +300,8 @@ public final class SmoothCameraController {
         double targetDist = targetOffset.length();
 
         // Snap inward immediately on wall collision so the camera doesn't clip into blocks
-        if (SmoothF5Config.smoothWallZoom && targetDist < state.smoothRelativeOffset.length() - 0.02) {
+        if (SmoothF5Config.preventWallClipping && SmoothF5Config.smoothWallZoom
+                && targetDist < state.smoothRelativeOffset.length() - 0.02) {
             double currentLen = state.smoothRelativeOffset.length();
             if (currentLen > 1.0e-4) {
                 state.smoothRelativeOffset = state.smoothRelativeOffset.scale(targetDist / currentLen);
@@ -313,30 +325,22 @@ public final class SmoothCameraController {
 
         Vec3 targetOffset = targetPos.subtract(eyePos);
         float targetDist = (float) targetOffset.length();
-
-        if (SmoothF5Config.smoothWallZoom) {
-            if (targetDist < state.smoothFollowDist - 0.02f) {
-                state.smoothFollowDist = targetDist;
-            } else {
-                state.smoothFollowDist = Mth.lerp(SmoothingMath.expFactor(rateH, dtSec), state.smoothFollowDist, targetDist);
-            }
-        } else {
-            state.smoothFollowDist = targetDist;
-        }
+        float followDist = stepFollowDistance(targetDist, rateH, dtSec, false, eyePos);
 
         Vec3 orbitOffset;
         if (SmoothF5Config.enableRotSmoothing) {
-            orbitOffset = computeCameraOffsetPos(Vec3.ZERO, state.smoothYaw, state.smoothPitch, state.smoothFollowDist);
+            orbitOffset = computeCameraOffsetPos(Vec3.ZERO, state.smoothYaw, state.smoothPitch, followDist);
         } else if (targetDist > 1.0e-4f) {
-            orbitOffset = targetOffset.scale(state.smoothFollowDist / targetDist);
+            orbitOffset = targetOffset.scale(followDist / targetDist);
         } else {
             orbitOffset = targetOffset;
         }
 
         state.smoothPos = state.smoothPivotPos.add(orbitOffset);
 
-        // Apply min-distance and max-lag safeguards, keeping smoothPivotPos consistent with any clamp
-        Vec3 clampedPos = applyDistanceAndLagClamps(eyePos, targetPos, state.smoothPos);
+        // Apply min-distance and max-lag safeguards against smoothed follow distance, keeping smoothPivotPos consistent
+        Vec3 clampRefTarget = computeClampReferenceTarget(eyePos, targetPos, targetDist, followDist);
+        Vec3 clampedPos = applyDistanceAndLagClamps(eyePos, clampRefTarget, state.smoothPos, false);
         if (!clampedPos.equals(state.smoothPos)) {
             state.smoothPos = clampedPos;
             state.smoothPivotPos = clampedPos.subtract(orbitOffset);
@@ -350,21 +354,43 @@ public final class SmoothCameraController {
         float rateV = rateH * SmoothF5Config.verticalResponsivenessScale;
         state.smoothPos = SmoothingMath.expLerpVec3(state.smoothPos, targetPos, rateH, rateV, dtSec);
 
-        double targetDist = targetPos.distanceTo(eyePos);
+        float rawTargetDist = (float) targetPos.distanceTo(eyePos);
+        float followDist = stepFollowDistance(rawTargetDist, rateH, dtSec, true, eyePos);
 
-        // Immediate inward snap when a wall forces the target camera closer
-        if (SmoothF5Config.smoothWallZoom && targetDist < state.lastTargetDist - 0.05f) {
-            Vec3 fromEye = state.smoothPos.subtract(eyePos);
-            double curDist = fromEye.length();
-            if (curDist > targetDist && curDist > 1.0e-4) {
-                state.smoothPos = eyePos.add(fromEye.scale(targetDist / curDist));
-            }
-        }
-
-        state.smoothPos = applyDistanceAndLagClamps(eyePos, targetPos, state.smoothPos);
+        // Clamp radially around eyePos in world space so quick turns don't fling the camera outward
+        Vec3 clampRefTarget = computeClampReferenceTarget(eyePos, targetPos, rawTargetDist, followDist);
+        state.smoothPos = applyDistanceAndLagClamps(eyePos, clampRefTarget, state.smoothPos, true);
         state.smoothPivotPos = eyePos;
         state.smoothRelativeOffset = state.smoothPos.subtract(eyePos);
-        state.smoothFollowDist = (float) state.smoothRelativeOffset.length();
+    }
+
+    private float stepFollowDistance(float targetDist, float rateH, float dtSec, boolean allowInwardPosSnap, Vec3 eyePos) {
+        if (SmoothF5Config.preventWallClipping) {
+            if (targetDist < state.smoothFollowDist - 0.02f) {
+                state.smoothFollowDist = targetDist;
+                if (allowInwardPosSnap && SmoothF5Config.smoothWallZoom) {
+                    Vec3 fromEye = state.smoothPos.subtract(eyePos);
+                    double curDist = fromEye.length();
+                    if (curDist > targetDist && curDist > 1.0e-4) {
+                        state.smoothPos = eyePos.add(fromEye.scale(targetDist / curDist));
+                    }
+                }
+            } else if (SmoothF5Config.smoothWallZoom) {
+                state.smoothFollowDist = Mth.lerp(SmoothingMath.expFactor(rateH, dtSec), state.smoothFollowDist, targetDist);
+            } else {
+                state.smoothFollowDist = targetDist;
+            }
+        } else {
+            state.smoothFollowDist = Mth.lerp(SmoothingMath.expFactor(rateH, dtSec), state.smoothFollowDist, targetDist);
+        }
+        return state.smoothFollowDist;
+    }
+
+    private static Vec3 computeClampReferenceTarget(Vec3 eyePos, Vec3 targetPos, float rawTargetDist, float followDist) {
+        if (rawTargetDist > 1.0e-4f && Math.abs(followDist - rawTargetDist) > 1.0e-4f) {
+            return eyePos.add(targetPos.subtract(eyePos).scale(followDist / rawTargetDist));
+        }
+        return targetPos;
     }
 
     private float effectiveHorizontalRate() {
@@ -376,19 +402,41 @@ public final class SmoothCameraController {
         return rateH;
     }
 
-    private Vec3 applyDistanceAndLagClamps(Vec3 eyePos, Vec3 targetPos, Vec3 pos) {
+    private Vec3 applyDistanceAndLagClamps(Vec3 eyePos, Vec3 targetPos, Vec3 pos, boolean radialMinDistance) {
         Vec3 toTarget = targetPos.subtract(eyePos);
         double targetDist = toTarget.length();
 
-        // Prevent camera from coming too close to or crossing behind the player (e.g. sprinting toward front camera)
+        // Prevent camera from coming too close to or crossing behind the player
         if (targetDist > 0.05) {
             Vec3 dir = toTarget.scale(1.0 / targetDist);
             Vec3 offset = pos.subtract(eyePos);
-            double axialDist = offset.dot(dir);
             double minAllowed = targetDist * SmoothF5Config.minPlayerDistanceRatio;
 
-            if (axialDist < minAllowed) {
-                pos = eyePos.add(offset.add(dir.scale(minAllowed - axialDist)));
+            if (radialMinDistance) {
+                double dist = offset.length();
+                if (dist < minAllowed) {
+                    if (dist > 1.0e-4) {
+                        Vec3 offsetDir = offset.scale(1.0 / dist);
+                        // Nudge away from exact 180-degree antipode so fast flips orbit around instead of stalling
+                        if (offsetDir.dot(dir) < -0.98) {
+                            Vec3 tangent = new Vec3(-dir.z, 0.0, dir.x);
+                            if (tangent.lengthSqr() < 1.0e-4) {
+                                tangent = new Vec3(1.0, 0.0, 0.0);
+                            } else {
+                                tangent = tangent.normalize();
+                            }
+                            offsetDir = offsetDir.add(tangent.scale(0.25)).normalize();
+                        }
+                        pos = eyePos.add(offsetDir.scale(minAllowed));
+                    } else {
+                        pos = eyePos.add(dir.scale(minAllowed));
+                    }
+                }
+            } else {
+                double axialDist = offset.dot(dir);
+                if (axialDist < minAllowed) {
+                    pos = eyePos.add(offset.add(dir.scale(minAllowed - axialDist)));
+                }
             }
         }
 
@@ -415,7 +463,8 @@ public final class SmoothCameraController {
             state.rotPrevRawYaw = targetYaw;
         }
 
-        float factor = SmoothingMath.expFactor(SmoothF5Config.rotResponsiveness, dtSec);
+        float rotRate = Mth.clamp(SmoothF5Config.rotResponsiveness, 1.0f, 10.0f);
+        float factor = SmoothingMath.expFactor(rotRate, dtSec);
         state.smoothYaw = Mth.lerp(factor, state.smoothYaw, state.rotTargetYaw);
         state.smoothPitch = Mth.lerp(factor, state.smoothPitch, targetPitch);
 
@@ -470,7 +519,19 @@ public final class SmoothCameraController {
         if (desiredDist < 1.0e-4) {
             return desiredPos;
         }
+
         double minDist = desiredDist;
+        HitResult centerHit = level.clip(new ClipContext(eyePos, desiredPos, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, entity));
+        if (centerHit.getType() != HitResult.Type.MISS) {
+            double centerDist = centerHit.getLocation().distanceTo(eyePos);
+            if (centerDist < minDist) {
+                minDist = centerDist;
+            }
+            if (minDist <= 1.0e-4) {
+                return eyePos;
+            }
+        }
+
         for (int i = 0; i < 8; i++) {
             double ox = ((i & 1) * 2 - 1) * 0.1;
             double oy = (((i >> 1) & 1) * 2 - 1) * 0.1;
@@ -479,7 +540,12 @@ public final class SmoothCameraController {
             Vec3 to = from.add(delta);
             HitResult hit = level.clip(new ClipContext(from, to, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, entity));
             if (hit.getType() != HitResult.Type.MISS) {
-                double hitDist = hit.getLocation().distanceTo(eyePos);
+                double hitDistSq = hit.getLocation().distanceToSqr(from);
+                // Ignore corner rays whose origin starts embedded in an adjacent block (e.g. brushing walls/ceilings)
+                if (hitDistSq <= 1.0e-6) {
+                    continue;
+                }
+                double hitDist = Math.sqrt(hitDistSq);
                 if (hitDist < minDist) {
                     minDist = hitDist;
                 }
